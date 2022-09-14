@@ -34,18 +34,6 @@ func newKVTableSchema(table string) func() *memdb.TableSchema {
 	}
 }
 
-// // indexFromIDValue creates an index key from any struct that implements singleValueID
-// func indexFromIDValue(e singleValueID) ([]byte, error) {
-// 	v := e.IDValue()
-// 	if v == "" {
-// 		return nil, errMissingValueForIndex
-// 	}
-
-// 	var b indexBuilder
-// 	b.String(v)
-// 	return b.Bytes(), nil
-// }
-
 // newTombstonesTableSchema returns a factory for a table schema used for storing tombstones
 // during KV delete operations to prevent the index from sliding backwards.
 func newTombstonesTableSchema(table string) func() *memdb.TableSchema {
@@ -393,4 +381,10 @@ func kvsCheckIndexTxn(table string, tx WriteTxn,
 // the given key.
 func (s *Store) KVSLockDelay(key string, entMeta *acl.EnterpriseMeta) time.Time {
 	return s.lockDelay.GetExpiration(key, entMeta)
+}
+
+// PrivateKVSLockDelay returns the expiration time for any lock delay associated with
+// the given key.
+func (s *Store) PrivateKVSLockDelay(key string, entMeta *acl.EnterpriseMeta) time.Time {
+	return s.privateLockDelay.GetExpiration(key, entMeta)
 }

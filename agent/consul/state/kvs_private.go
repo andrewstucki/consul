@@ -99,11 +99,11 @@ func (s *Store) PrivateKVSGet(ws memdb.WatchSet, key string, entMeta *acl.Enterp
 	return kvsGetTxn(tablePrivateKVs, tablePrivateTombstones, tx, ws, key, *entMeta)
 }
 
-// PivateKVSList is used to list out all keys under a given prefix. If the
+// PrivateKVSList is used to list out all keys under a given prefix. If the
 // prefix is left empty, all keys in the KVS will be returned. The returned
 // is the max index of the returned kvs entries or applicable tombstones, or
 // else it's the full table indexes for kvs and tombstones.
-func (s *Store) PivateKVSList(ws memdb.WatchSet,
+func (s *Store) PrivateKVSList(ws memdb.WatchSet,
 	prefix string, entMeta *acl.EnterpriseMeta) (uint64, structs.DirEntries, error) {
 
 	tx := s.db.Txn(false)

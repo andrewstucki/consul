@@ -28,6 +28,7 @@ const (
 	Intentions            string = "intentions"
 	Internal              string = "internal"
 	KV                    string = "kvs"
+	Private               string = "privvate-kvs"
 	LAN                   string = "lan"
 	Leader                string = "leader"
 	Legacy                string = "legacy"

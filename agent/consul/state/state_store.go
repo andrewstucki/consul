@@ -115,6 +115,9 @@ type Store struct {
 
 	// lockDelay holds expiration times for locks associated with keys.
 	lockDelay *Delay
+
+	// privateLockDelay holds expiration times for locks associated with keys.
+	privateLockDelay *Delay
 }
 
 // Snapshot is used to provide a point-in-time snapshot. It
@@ -161,6 +164,7 @@ func NewStateStore(gc *TombstoneGC) *Store {
 		kvsGraveyard:     NewGraveyard(gc, tableTombstones),
 		privateGraveyard: NewGraveyard(gc, tablePrivateTombstones),
 		lockDelay:        NewDelay(),
+		privateLockDelay: NewDelay(),
 		db: &changeTrackerDB{
 			db:             db,
 			publisher:      stream.NoOpEventPublisher{},

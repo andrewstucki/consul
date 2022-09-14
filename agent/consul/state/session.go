@@ -322,7 +322,7 @@ func (s *Store) SessionDestroy(idx uint64, sessionID string, entMeta *acl.Enterp
 	defer tx.Abort()
 
 	// Call the session deletion.
-	if err := s.deleteSessionTxn(tableKVs, s.kvsGraveyard, tx, idx, sessionID, entMeta); err != nil {
+	if err := s.deleteSessionTxn(tx, idx, sessionID, entMeta); err != nil {
 		return err
 	}
 
@@ -331,7 +331,7 @@ func (s *Store) SessionDestroy(idx uint64, sessionID string, entMeta *acl.Enterp
 
 // deleteSessionTxn is the inner method, which is used to do the actual
 // session deletion and handle session invalidation, etc.
-func (s *Store) deleteSessionTxn(table string, graveyard *Graveyard, tx WriteTxn, idx uint64, sessionID string, entMeta *acl.EnterpriseMeta) error {
+func (s *Store) deleteSessionTxn(tx WriteTxn, idx uint64, sessionID string, entMeta *acl.EnterpriseMeta) error {
 	// Look up the session.
 	if entMeta == nil {
 		entMeta = structs.DefaultEnterpriseMetaInDefaultPartition()
@@ -370,6 +370,15 @@ func (s *Store) deleteSessionTxn(table string, graveyard *Graveyard, tx WriteTxn
 		kvs = append(kvs, entry)
 	}
 
+	entries, err = tx.Get(tablePrivateKVs, indexSession, sessionID)
+	if err != nil {
+		return fmt.Errorf("failed kvs lookup: %s", err)
+	}
+	var privateKvs []interface{}
+	for entry := entries.Next(); entry != nil; entry = entries.Next() {
+		privateKvs = append(privateKvs, entry)
+	}
+
 	// Invalidate any held locks.
 	switch session.Behavior {
 	case structs.SessionKeysRelease:
@@ -379,7 +388,7 @@ func (s *Store) deleteSessionTxn(table string, graveyard *Graveyard, tx WriteTxn
 			// respects the transaction we are in.
 			e := obj.(*structs.DirEntry).Clone()
 			e.Session = ""
-			if err := kvsSetTxn(table, tx, idx, e, true); err != nil {
+			if err := kvsSetTxn(tableKVs, tx, idx, e, true); err != nil {
 				return fmt.Errorf("failed kvs update: %s", err)
 			}
 
@@ -388,16 +397,42 @@ func (s *Store) deleteSessionTxn(table string, graveyard *Graveyard, tx WriteTxn
 				s.lockDelay.SetExpiration(e.Key, now, delay, entMeta)
 			}
 		}
+		for _, obj := range privateKvs {
+			// Note that we clone here since we are modifying the
+			// returned object and want to make sure our set op
+			// respects the transaction we are in.
+			e := obj.(*structs.DirEntry).Clone()
+			e.Session = ""
+			if err := kvsSetTxn(tablePrivateKVs, tx, idx, e, true); err != nil {
+				return fmt.Errorf("failed kvs update: %s", err)
+			}
+
+			// Apply the lock delay if present.
+			if delay > 0 {
+				s.privateLockDelay.SetExpiration(e.Key, now, delay, entMeta)
+			}
+		}
 	case structs.SessionKeysDelete:
 		for _, obj := range kvs {
 			e := obj.(*structs.DirEntry)
-			if err := s.kvsDeleteTxn(table, graveyard, tx, idx, e.Key, entMeta); err != nil {
+			if err := s.kvsDeleteTxn(tableKVs, s.kvsGraveyard, tx, idx, e.Key, entMeta); err != nil {
 				return fmt.Errorf("failed kvs delete: %s", err)
 			}
 
 			// Apply the lock delay if present.
 			if delay > 0 {
 				s.lockDelay.SetExpiration(e.Key, now, delay, entMeta)
+			}
+		}
+		for _, obj := range kvs {
+			e := obj.(*structs.DirEntry)
+			if err := s.kvsDeleteTxn(tablePrivateKVs, s.privateGraveyard, tx, idx, e.Key, entMeta); err != nil {
+				return fmt.Errorf("failed kvs delete: %s", err)
+			}
+
+			// Apply the lock delay if present.
+			if delay > 0 {
+				s.privateLockDelay.SetExpiration(e.Key, now, delay, entMeta)
 			}
 		}
 	default:

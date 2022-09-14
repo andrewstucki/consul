@@ -153,6 +153,8 @@ var requestTypeStrings = map[MessageType]string{
 	PeeringTrustBundleWriteType:     "PeeringTrustBundle",
 	PeeringTrustBundleDeleteType:    "PeeringTrustBundleDelete",
 	PeeringSecretsWriteType:         "PeeringSecret",
+	PrivateKVSRequestType:           "PrivateKVSRequest",
+	PrivateTombstoneRequestType:     "PrivateTombstoneRequest",
 }
 
 const (
