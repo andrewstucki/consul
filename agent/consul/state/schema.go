@@ -28,6 +28,7 @@ func newDBSchema() *memdb.DBSchema {
 		intentionsTableSchema,
 		kindServiceNameTableSchema,
 		newKVTableSchema(tableKVs),
+		newKVTableSchema(tablePrivateKVs),
 		meshTopologyTableSchema,
 		nodesTableSchema,
 		peeringTableSchema,
@@ -44,6 +45,7 @@ func newDBSchema() *memdb.DBSchema {
 		systemMetadataTableSchema,
 		tokensTableSchema,
 		newTombstonesTableSchema(tableTombstones),
+		newTombstonesTableSchema(tablePrivateTombstones),
 		usageTableSchema,
 	)
 	withEnterpriseSchema(db)

@@ -198,18 +198,36 @@ func (c *FSM) applyKVSOperation(buf []byte, index uint64) interface{} {
 	switch req.Op {
 	case api.KVSet:
 		return c.state.KVSSet(index, &req.DirEnt)
+	case state.PrivateKVSet:
+		return c.state.PrivateKVSSet(index, &req.DirEnt)
 	case api.KVDelete:
 		return c.state.KVSDelete(index, req.DirEnt.Key, &req.DirEnt.EnterpriseMeta)
+	case state.PrivateKVDelete:
+		return c.state.PrivateKVSDelete(index, req.DirEnt.Key, &req.DirEnt.EnterpriseMeta)
 	case api.KVDeleteCAS:
 		act, err := c.state.KVSDeleteCAS(index, req.DirEnt.ModifyIndex, req.DirEnt.Key, &req.DirEnt.EnterpriseMeta)
 		if err != nil {
 			return err
 		}
 		return act
+	case state.PrivateKVDeleteCAS:
+		act, err := c.state.PrivateKVSDeleteCAS(index, req.DirEnt.ModifyIndex, req.DirEnt.Key, &req.DirEnt.EnterpriseMeta)
+		if err != nil {
+			return err
+		}
+		return act
 	case api.KVDeleteTree:
 		return c.state.KVSDeleteTree(index, req.DirEnt.Key, &req.DirEnt.EnterpriseMeta)
+	case state.PrivateKVDeleteTree:
+		return c.state.PrivateKVSDeleteTree(index, req.DirEnt.Key, &req.DirEnt.EnterpriseMeta)
 	case api.KVCAS:
 		act, err := c.state.KVSSetCAS(index, &req.DirEnt)
+		if err != nil {
+			return err
+		}
+		return act
+	case state.PrivateKVCAS:
+		act, err := c.state.PrivateKVSSetCAS(index, &req.DirEnt)
 		if err != nil {
 			return err
 		}
@@ -220,8 +238,20 @@ func (c *FSM) applyKVSOperation(buf []byte, index uint64) interface{} {
 			return err
 		}
 		return act
+	case state.PrivateKVLock:
+		act, err := c.state.PrivateKVSLock(index, &req.DirEnt)
+		if err != nil {
+			return err
+		}
+		return act
 	case api.KVUnlock:
 		act, err := c.state.KVSUnlock(index, &req.DirEnt)
+		if err != nil {
+			return err
+		}
+		return act
+	case state.PrivateKVUnlock:
+		act, err := c.state.PrivateKVSUnlock(index, &req.DirEnt)
 		if err != nil {
 			return err
 		}
@@ -268,6 +298,8 @@ func (c *FSM) applyTombstoneOperation(buf []byte, index uint64) interface{} {
 	switch req.Op {
 	case structs.TombstoneReap:
 		return c.state.ReapTombstones(index, req.ReapIndex)
+	case structs.TombstoneReapPrivate:
+		return c.state.ReapPrivateTombstones(index, req.ReapIndex)
 	default:
 		c.logger.Warn("Invalid Tombstone operation", "operation", req.Op)
 		return fmt.Errorf("Invalid Tombstone operation '%s'", req.Op)

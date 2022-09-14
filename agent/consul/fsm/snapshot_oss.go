@@ -5,6 +5,7 @@ import (
 	"net"
 
 	"github.com/hashicorp/consul-net-rpc/go-msgpack/codec"
+	"github.com/hashicorp/go-memdb"
 	"github.com/hashicorp/raft"
 	"github.com/mitchellh/mapstructure"
 
@@ -18,7 +19,9 @@ func init() {
 
 	registerRestorer(structs.RegisterRequestType, restoreRegistration)
 	registerRestorer(structs.KVSRequestType, restoreKV)
+	registerRestorer(structs.PrivateKVSRequestType, restorePrivateKV)
 	registerRestorer(structs.TombstoneRequestType, restoreTombstone)
+	registerRestorer(structs.PrivateTombstoneRequestType, restorePrivateTombstone)
 	registerRestorer(structs.SessionRequestType, restoreSession)
 	registerRestorer(structs.DeprecatedACLRequestType, restoreACL) // TODO(ACL-Legacy-Compat) - remove in phase 2
 	registerRestorer(structs.ACLBootstrapRequestType, restoreACLBootstrap)
@@ -61,7 +64,13 @@ func persistOSS(s *snapshot, sink raft.SnapshotSink, encoder *codec.Encoder) err
 	if err := s.persistKVs(sink, encoder); err != nil {
 		return err
 	}
+	if err := s.persistPrivateKVs(sink, encoder); err != nil {
+		return err
+	}
 	if err := s.persistTombstones(sink, encoder); err != nil {
+		return err
+	}
+	if err := s.persistPrivateTombstones(sink, encoder); err != nil {
 		return err
 	}
 	if err := s.persistPreparedQueries(sink, encoder); err != nil {
@@ -278,13 +287,23 @@ func (s *snapshot) persistACLs(sink raft.SnapshotSink,
 
 func (s *snapshot) persistKVs(sink raft.SnapshotSink,
 	encoder *codec.Encoder) error {
-	entries, err := s.state.KVs()
+	return s.persistTypedKVs(structs.KVSRequestType, s.state.KVs, sink, encoder)
+}
+
+func (s *snapshot) persistPrivateKVs(sink raft.SnapshotSink,
+	encoder *codec.Encoder) error {
+	return s.persistTypedKVs(structs.PrivateKVSRequestType, s.state.PrivateKVs, sink, encoder)
+}
+
+func (s *snapshot) persistTypedKVs(requestType int, fn func() (memdb.ResultIterator, error), sink raft.SnapshotSink,
+	encoder *codec.Encoder) error {
+	entries, err := fn()
 	if err != nil {
 		return err
 	}
 
 	for entry := entries.Next(); entry != nil; entry = entries.Next() {
-		if _, err := sink.Write([]byte{byte(structs.KVSRequestType)}); err != nil {
+		if _, err := sink.Write([]byte{byte(requestType)}); err != nil {
 			return err
 		}
 		if err := encoder.Encode(entry.(*structs.DirEntry)); err != nil {
@@ -296,13 +315,23 @@ func (s *snapshot) persistKVs(sink raft.SnapshotSink,
 
 func (s *snapshot) persistTombstones(sink raft.SnapshotSink,
 	encoder *codec.Encoder) error {
-	stones, err := s.state.Tombstones()
+	return s.persistTypedTombstones(structs.TombstoneRequestType, s.state.Tombstones, sink, encoder)
+}
+
+func (s *snapshot) persistPrivateTombstones(sink raft.SnapshotSink,
+	encoder *codec.Encoder) error {
+	return s.persistTypedTombstones(structs.PrivateTombstoneRequestType, s.state.PrivateTombstones, sink, encoder)
+}
+
+func (s *snapshot) persistTypedTombstones(requestType int, fn func() (memdb.ResultIterator, error), sink raft.SnapshotSink,
+	encoder *codec.Encoder) error {
+	stones, err := fn()
 	if err != nil {
 		return err
 	}
 
 	for stone := stones.Next(); stone != nil; stone = stones.Next() {
-		if _, err := sink.Write([]byte{byte(structs.TombstoneRequestType)}); err != nil {
+		if _, err := sink.Write([]byte{byte(requestType)}); err != nil {
 			return err
 		}
 
@@ -620,17 +649,33 @@ func restoreRegistration(header *SnapshotHeader, restore *state.Restore, decoder
 }
 
 func restoreKV(header *SnapshotHeader, restore *state.Restore, decoder *codec.Decoder) error {
+	return restoreFnKV(restore.KVS, header, restore, decoder)
+}
+
+func restorePrivateKV(header *SnapshotHeader, restore *state.Restore, decoder *codec.Decoder) error {
+	return restoreFnKV(restore.PrivateKVS, header, restore, decoder)
+}
+
+func restoreFnKV(fn func(entry *structs.DirEntry) error, header *SnapshotHeader, restore *state.Restore, decoder *codec.Decoder) error {
 	var req structs.DirEntry
 	if err := decoder.Decode(&req); err != nil {
 		return err
 	}
-	if err := restore.KVS(&req); err != nil {
+	if err := fn(&req); err != nil {
 		return err
 	}
 	return nil
 }
 
 func restoreTombstone(header *SnapshotHeader, restore *state.Restore, decoder *codec.Decoder) error {
+	return restoreFnTombstone(restore.Tombstone, header, restore, decoder)
+}
+
+func restorePrivateTombstone(header *SnapshotHeader, restore *state.Restore, decoder *codec.Decoder) error {
+	return restoreFnTombstone(restore.PrivateTombstone, header, restore, decoder)
+}
+
+func restoreFnTombstone(fn func(stone *state.Tombstone) error, header *SnapshotHeader, restore *state.Restore, decoder *codec.Decoder) error {
 	var req structs.DirEntry
 	if err := decoder.Decode(&req); err != nil {
 		return err
@@ -643,7 +688,7 @@ func restoreTombstone(header *SnapshotHeader, restore *state.Restore, decoder *c
 		Key:   req.Key,
 		Index: req.ModifyIndex,
 	}
-	if err := restore.Tombstone(stone); err != nil {
+	if err := fn(stone); err != nil {
 		return err
 	}
 	return nil

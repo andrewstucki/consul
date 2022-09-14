@@ -85,6 +85,8 @@ const (
 	PeeringTrustBundleWriteType                 = 38
 	PeeringTrustBundleDeleteType                = 39
 	PeeringSecretsWriteType                     = 40
+	PrivateKVSRequestType                       = 41
+	PrivateTombstoneRequestType                 = 42
 )
 
 const (
@@ -2772,7 +2774,8 @@ type EventFireResponse struct {
 type TombstoneOp string
 
 const (
-	TombstoneReap TombstoneOp = "reap"
+	TombstoneReap        TombstoneOp = "reap"
+	TombstoneReapPrivate TombstoneOp = "reap-private"
 )
 
 // TombstoneRequest is used to trigger a reaping of the tombstones
