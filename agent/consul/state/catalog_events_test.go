@@ -216,7 +216,7 @@ func TestServiceHealthEventsFromChanges(t *testing.T) {
 	run(t, eventsTestCase{
 		Name: "irrelevant events",
 		Mutate: func(s *Store, tx *txn) error {
-			return kvsSetTxn(tx, tx.Index, &structs.DirEntry{
+			return kvsSetTxn(tableKVs, tx, tx.Index, &structs.DirEntry{
 				Key:   "foo",
 				Value: []byte("bar"),
 			}, false)

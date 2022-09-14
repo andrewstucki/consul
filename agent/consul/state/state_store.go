@@ -110,6 +110,9 @@ type Store struct {
 	// kvsGraveyard manages tombstones for the key value store.
 	kvsGraveyard *Graveyard
 
+	// privateGraveyard manages tombstones for the private key value store.
+	privateGraveyard *Graveyard
+
 	// lockDelay holds expiration times for locks associated with keys.
 	lockDelay *Delay
 }
@@ -153,10 +156,11 @@ func NewStateStore(gc *TombstoneGC) *Store {
 		panic(fmt.Sprintf("failed to create state store: %v", err))
 	}
 	s := &Store{
-		schema:       schema,
-		abandonCh:    make(chan struct{}),
-		kvsGraveyard: NewGraveyard(gc),
-		lockDelay:    NewDelay(),
+		schema:           schema,
+		abandonCh:        make(chan struct{}),
+		kvsGraveyard:     NewGraveyard(gc, tableTombstones),
+		privateGraveyard: NewGraveyard(gc, tablePrivateTombstones),
+		lockDelay:        NewDelay(),
 		db: &changeTrackerDB{
 			db:             db,
 			publisher:      stream.NoOpEventPublisher{},

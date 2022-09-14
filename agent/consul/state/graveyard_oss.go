@@ -11,16 +11,16 @@ import (
 )
 
 func (g *Graveyard) insertTombstoneWithTxn(tx WriteTxn, _ string, stone *Tombstone, updateMax bool) error {
-	if err := tx.Insert("tombstones", stone); err != nil {
+	if err := tx.Insert(g.table, stone); err != nil {
 		return err
 	}
 
 	if updateMax {
-		if err := indexUpdateMaxTxn(tx, stone.Index, "tombstones"); err != nil {
+		if err := indexUpdateMaxTxn(tx, stone.Index, g.table); err != nil {
 			return fmt.Errorf("failed updating tombstone index: %v", err)
 		}
 	} else {
-		if err := tx.Insert(tableIndex, &IndexEntry{"tombstones", stone.Index}); err != nil {
+		if err := tx.Insert(tableIndex, &IndexEntry{g.table, stone.Index}); err != nil {
 			return fmt.Errorf("failed updating tombstone index: %s", err)
 		}
 	}
@@ -32,7 +32,7 @@ func (g *Graveyard) insertTombstoneWithTxn(tx WriteTxn, _ string, stone *Tombsto
 func (g *Graveyard) GetMaxIndexTxn(tx ReadTxn, prefix string, _ *acl.EnterpriseMeta) (uint64, error) {
 	var lindex uint64
 	q := Query{Value: prefix, EnterpriseMeta: *structs.DefaultEnterpriseMetaInDefaultPartition()}
-	stones, err := tx.Get(tableTombstones, indexID+"_prefix", q)
+	stones, err := tx.Get(g.table, indexID+"_prefix", q)
 	if err != nil {
 		return 0, fmt.Errorf("failed querying tombstones: %s", err)
 	}

@@ -25,11 +25,13 @@ type Graveyard struct {
 	// GC is when we create tombstones to track their time-to-live.
 	// The GC is consumed upstream to manage clearing of tombstones.
 	gc *TombstoneGC
+
+	table string
 }
 
 // NewGraveyard returns a new graveyard.
-func NewGraveyard(gc *TombstoneGC) *Graveyard {
-	return &Graveyard{gc: gc}
+func NewGraveyard(gc *TombstoneGC, table string) *Graveyard {
+	return &Graveyard{gc: gc, table: table}
 }
 
 // InsertTxn adds a new tombstone.
@@ -43,7 +45,7 @@ func (g *Graveyard) InsertTxn(tx WriteTxn, key string, idx uint64, entMeta *acl.
 	}
 
 	// Insert the tombstone.
-	if err := g.insertTombstoneWithTxn(tx, "tombstones", stone, false); err != nil {
+	if err := g.insertTombstoneWithTxn(tx, g.table, stone, false); err != nil {
 		return fmt.Errorf("failed inserting tombstone: %s", err)
 	}
 
@@ -56,13 +58,13 @@ func (g *Graveyard) InsertTxn(tx WriteTxn, key string, idx uint64, entMeta *acl.
 
 // DumpTxn returns all the tombstones.
 func (g *Graveyard) DumpTxn(tx ReadTxn) (memdb.ResultIterator, error) {
-	return tx.Get(tableTombstones, indexID)
+	return tx.Get(g.table, indexID)
 }
 
 // RestoreTxn is used when restoring from a snapshot. For general inserts, use
 // InsertTxn.
 func (g *Graveyard) RestoreTxn(tx WriteTxn, stone *Tombstone) error {
-	if err := g.insertTombstoneWithTxn(tx, "tombstones", stone, true); err != nil {
+	if err := g.insertTombstoneWithTxn(tx, g.table, stone, true); err != nil {
 		return fmt.Errorf("failed inserting tombstone: %s", err)
 	}
 
@@ -75,7 +77,7 @@ func (g *Graveyard) ReapTxn(tx WriteTxn, idx uint64) error {
 	// This does a full table scan since we currently can't index on a
 	// numeric value. Since this is all in-memory and done infrequently
 	// this pretty reasonable.
-	stones, err := tx.Get(tableTombstones, indexID)
+	stones, err := tx.Get(g.table, indexID)
 	if err != nil {
 		return fmt.Errorf("failed querying tombstones: %s", err)
 	}
@@ -91,7 +93,7 @@ func (g *Graveyard) ReapTxn(tx WriteTxn, idx uint64) error {
 	// Delete the tombstones in a separate loop so we don't trash the
 	// iterator.
 	for _, obj := range objs {
-		if err := tx.Delete("tombstones", obj); err != nil {
+		if err := tx.Delete(g.table, obj); err != nil {
 			return fmt.Errorf("failed deleting tombstone: %s", err)
 		}
 	}

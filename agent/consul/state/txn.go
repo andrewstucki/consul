@@ -15,25 +15,45 @@ func (s *Store) txnKVS(tx WriteTxn, idx uint64, op *structs.TxnKVOp) (structs.Tx
 	switch op.Verb {
 	case api.KVSet:
 		entry = &op.DirEnt
-		err = kvsSetTxn(tx, idx, entry, false)
+		err = kvsSetTxn(tableKVs, tx, idx, entry, false)
+	case PrivateKVSet:
+		entry = &op.DirEnt
+		err = kvsSetTxn(tablePrivateKVs, tx, idx, entry, false)
 
 	case api.KVDelete:
-		err = s.kvsDeleteTxn(tx, idx, op.DirEnt.Key, &op.DirEnt.EnterpriseMeta)
+		err = s.kvsDeleteTxn(tableKVs, s.kvsGraveyard, tx, idx, op.DirEnt.Key, &op.DirEnt.EnterpriseMeta)
+	case PrivateKVDelete:
+		err = s.kvsDeleteTxn(tablePrivateKVs, s.privateGraveyard, tx, idx, op.DirEnt.Key, &op.DirEnt.EnterpriseMeta)
 
 	case api.KVDeleteCAS:
 		var ok bool
-		ok, err = s.kvsDeleteCASTxn(tx, idx, op.DirEnt.ModifyIndex, op.DirEnt.Key, &op.DirEnt.EnterpriseMeta)
+		ok, err = s.kvsDeleteCASTxn(tableKVs, s.kvsGraveyard, tx, idx, op.DirEnt.ModifyIndex, op.DirEnt.Key, &op.DirEnt.EnterpriseMeta)
+		if !ok && err == nil {
+			err = fmt.Errorf("failed to delete key %q, index is stale", op.DirEnt.Key)
+		}
+	case PrivateKVDeleteCAS:
+		var ok bool
+		ok, err = s.kvsDeleteCASTxn(tablePrivateKVs, s.privateGraveyard, tx, idx, op.DirEnt.ModifyIndex, op.DirEnt.Key, &op.DirEnt.EnterpriseMeta)
 		if !ok && err == nil {
 			err = fmt.Errorf("failed to delete key %q, index is stale", op.DirEnt.Key)
 		}
 
 	case api.KVDeleteTree:
-		err = s.kvsDeleteTreeTxn(tx, idx, op.DirEnt.Key, &op.DirEnt.EnterpriseMeta)
+		err = s.kvsDeleteTreeTxn(tableKVs, s.kvsGraveyard, tx, idx, op.DirEnt.Key, &op.DirEnt.EnterpriseMeta)
+	case PrivateKVDeleteTree:
+		err = s.kvsDeleteTreeTxn(tablePrivateKVs, s.privateGraveyard, tx, idx, op.DirEnt.Key, &op.DirEnt.EnterpriseMeta)
 
 	case api.KVCAS:
 		var ok bool
 		entry = &op.DirEnt
-		ok, err = kvsSetCASTxn(tx, idx, entry)
+		ok, err = kvsSetCASTxn(tableKVs, tx, idx, entry)
+		if !ok && err == nil {
+			err = fmt.Errorf("failed to set key %q, index is stale", op.DirEnt.Key)
+		}
+	case PrivateKVCAS:
+		var ok bool
+		entry = &op.DirEnt
+		ok, err = kvsSetCASTxn(tablePrivateKVs, tx, idx, entry)
 		if !ok && err == nil {
 			err = fmt.Errorf("failed to set key %q, index is stale", op.DirEnt.Key)
 		}
@@ -41,7 +61,14 @@ func (s *Store) txnKVS(tx WriteTxn, idx uint64, op *structs.TxnKVOp) (structs.Tx
 	case api.KVLock:
 		var ok bool
 		entry = &op.DirEnt
-		ok, err = kvsLockTxn(tx, idx, entry)
+		ok, err = kvsLockTxn(tableKVs, tx, idx, entry)
+		if !ok && err == nil {
+			err = fmt.Errorf("failed to lock key %q, lock is already held", op.DirEnt.Key)
+		}
+	case PrivateKVLock:
+		var ok bool
+		entry = &op.DirEnt
+		ok, err = kvsLockTxn(tablePrivateKVs, tx, idx, entry)
 		if !ok && err == nil {
 			err = fmt.Errorf("failed to lock key %q, lock is already held", op.DirEnt.Key)
 		}
@@ -49,19 +76,37 @@ func (s *Store) txnKVS(tx WriteTxn, idx uint64, op *structs.TxnKVOp) (structs.Tx
 	case api.KVUnlock:
 		var ok bool
 		entry = &op.DirEnt
-		ok, err = kvsUnlockTxn(tx, idx, entry)
+		ok, err = kvsUnlockTxn(tableKVs, tx, idx, entry)
+		if !ok && err == nil {
+			err = fmt.Errorf("failed to unlock key %q, lock isn't held, or is held by another session", op.DirEnt.Key)
+		}
+	case PrivateKVUnlock:
+		var ok bool
+		entry = &op.DirEnt
+		ok, err = kvsUnlockTxn(tablePrivateKVs, tx, idx, entry)
 		if !ok && err == nil {
 			err = fmt.Errorf("failed to unlock key %q, lock isn't held, or is held by another session", op.DirEnt.Key)
 		}
 
 	case api.KVGet:
-		_, entry, err = kvsGetTxn(tx, nil, op.DirEnt.Key, op.DirEnt.EnterpriseMeta)
+		_, entry, err = kvsGetTxn(tableKVs, tableTombstones, tx, nil, op.DirEnt.Key, op.DirEnt.EnterpriseMeta)
+		if entry == nil && err == nil {
+			err = fmt.Errorf("key %q doesn't exist", op.DirEnt.Key)
+		}
+	case PrivateKVGet:
+		_, entry, err = kvsGetTxn(tablePrivateKVs, tablePrivateTombstones, tx, nil, op.DirEnt.Key, op.DirEnt.EnterpriseMeta)
 		if entry == nil && err == nil {
 			err = fmt.Errorf("key %q doesn't exist", op.DirEnt.Key)
 		}
 
 	case api.KVGetOrEmpty:
-		_, entry, err = kvsGetTxn(tx, nil, op.DirEnt.Key, op.DirEnt.EnterpriseMeta)
+		_, entry, err = kvsGetTxn(tableKVs, tableTombstones, tx, nil, op.DirEnt.Key, op.DirEnt.EnterpriseMeta)
+		if entry == nil && err == nil {
+			entry = &op.DirEnt
+			entry.Value = nil
+		}
+	case PrivateKVGetOrEmpty:
+		_, entry, err = kvsGetTxn(tablePrivateKVs, tablePrivateTombstones, tx, nil, op.DirEnt.Key, op.DirEnt.EnterpriseMeta)
 		if entry == nil && err == nil {
 			entry = &op.DirEnt
 			entry.Value = nil
@@ -69,7 +114,18 @@ func (s *Store) txnKVS(tx WriteTxn, idx uint64, op *structs.TxnKVOp) (structs.Tx
 
 	case api.KVGetTree:
 		var entries structs.DirEntries
-		_, entries, err = s.kvsListTxn(tx, nil, op.DirEnt.Key, op.DirEnt.EnterpriseMeta)
+		_, entries, err = s.kvsListTxn(tableKVs, tableTombstones, s.kvsGraveyard, tx, nil, op.DirEnt.Key, op.DirEnt.EnterpriseMeta)
+		if err == nil {
+			results := make(structs.TxnResults, 0, len(entries))
+			for _, e := range entries {
+				result := structs.TxnResult{KV: e}
+				results = append(results, &result)
+			}
+			return results, nil
+		}
+	case PrivateKVGetTree:
+		var entries structs.DirEntries
+		_, entries, err = s.kvsListTxn(tablePrivateKVs, tablePrivateTombstones, s.privateGraveyard, tx, nil, op.DirEnt.Key, op.DirEnt.EnterpriseMeta)
 		if err == nil {
 			results := make(structs.TxnResults, 0, len(entries))
 			for _, e := range entries {
@@ -80,13 +136,22 @@ func (s *Store) txnKVS(tx WriteTxn, idx uint64, op *structs.TxnKVOp) (structs.Tx
 		}
 
 	case api.KVCheckSession:
-		entry, err = kvsCheckSessionTxn(tx, op.DirEnt.Key, op.DirEnt.Session, &op.DirEnt.EnterpriseMeta)
+		entry, err = kvsCheckSessionTxn(tableKVs, tx, op.DirEnt.Key, op.DirEnt.Session, &op.DirEnt.EnterpriseMeta)
+	case PrivateKVCheckSession:
+		entry, err = kvsCheckSessionTxn(tableKVs, tx, op.DirEnt.Key, op.DirEnt.Session, &op.DirEnt.EnterpriseMeta)
 
 	case api.KVCheckIndex:
-		entry, err = kvsCheckIndexTxn(tx, op.DirEnt.Key, op.DirEnt.ModifyIndex, op.DirEnt.EnterpriseMeta)
+		entry, err = kvsCheckIndexTxn(tableKVs, tx, op.DirEnt.Key, op.DirEnt.ModifyIndex, op.DirEnt.EnterpriseMeta)
+	case PrivateKVCheckIndex:
+		entry, err = kvsCheckIndexTxn(tablePrivateKVs, tx, op.DirEnt.Key, op.DirEnt.ModifyIndex, op.DirEnt.EnterpriseMeta)
 
 	case api.KVCheckNotExists:
-		_, entry, err = kvsGetTxn(tx, nil, op.DirEnt.Key, op.DirEnt.EnterpriseMeta)
+		_, entry, err = kvsGetTxn(tableKVs, tableTombstones, tx, nil, op.DirEnt.Key, op.DirEnt.EnterpriseMeta)
+		if entry != nil && err == nil {
+			err = fmt.Errorf("key %q exists", op.DirEnt.Key)
+		}
+	case PrivateKVCheckNotExists:
+		_, entry, err = kvsGetTxn(tablePrivateKVs, tablePrivateTombstones, tx, nil, op.DirEnt.Key, op.DirEnt.EnterpriseMeta)
 		if entry != nil && err == nil {
 			err = fmt.Errorf("key %q exists", op.DirEnt.Key)
 		}

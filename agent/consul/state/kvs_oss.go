@@ -40,28 +40,28 @@ func prefixIndexForIDValue(arg interface{}) ([]byte, error) {
 	return nil, fmt.Errorf("unexpected type %T for singleValueID prefix index", arg)
 }
 
-func insertKVTxn(tx WriteTxn, entry *structs.DirEntry, updateMax bool, _ bool) error {
-	if err := tx.Insert(tableKVs, entry); err != nil {
+func insertKVTxn(table string, tx WriteTxn, entry *structs.DirEntry, updateMax bool, _ bool) error {
+	if err := tx.Insert(table, entry); err != nil {
 		return err
 	}
 
 	if updateMax {
-		if err := indexUpdateMaxTxn(tx, entry.ModifyIndex, tableKVs); err != nil {
+		if err := indexUpdateMaxTxn(tx, entry.ModifyIndex, table); err != nil {
 			return fmt.Errorf("failed updating kvs index: %v", err)
 		}
 	} else {
-		if err := tx.Insert(tableIndex, &IndexEntry{tableKVs, entry.ModifyIndex}); err != nil {
+		if err := tx.Insert(tableIndex, &IndexEntry{table, entry.ModifyIndex}); err != nil {
 			return fmt.Errorf("failed updating kvs index: %s", err)
 		}
 	}
 	return nil
 }
 
-func kvsListEntriesTxn(tx ReadTxn, ws memdb.WatchSet, prefix string, entMeta acl.EnterpriseMeta) (uint64, structs.DirEntries, error) {
+func kvsListEntriesTxn(table string, tx ReadTxn, ws memdb.WatchSet, prefix string, entMeta acl.EnterpriseMeta) (uint64, structs.DirEntries, error) {
 	var ents structs.DirEntries
 	var lindex uint64
 
-	entries, err := tx.Get(tableKVs, indexID+"_prefix", prefix)
+	entries, err := tx.Get(table, indexID+"_prefix", prefix)
 	if err != nil {
 		return 0, nil, fmt.Errorf("failed kvs lookup: %s", err)
 	}
@@ -80,38 +80,38 @@ func kvsListEntriesTxn(tx ReadTxn, ws memdb.WatchSet, prefix string, entMeta acl
 
 // kvsDeleteTreeTxn is the inner method that does a recursive delete inside an
 // existing transaction.
-func (s *Store) kvsDeleteTreeTxn(tx WriteTxn, idx uint64, prefix string, entMeta *acl.EnterpriseMeta) error {
+func (s *Store) kvsDeleteTreeTxn(table string, graveyard *Graveyard, tx WriteTxn, idx uint64, prefix string, entMeta *acl.EnterpriseMeta) error {
 	// For prefix deletes, only insert one tombstone and delete the entire subtree
-	deleted, err := tx.DeletePrefix(tableKVs, indexID+"_prefix", prefix)
+	deleted, err := tx.DeletePrefix(table, indexID+"_prefix", prefix)
 	if err != nil {
 		return fmt.Errorf("failed recursive deleting kvs entry: %s", err)
 	}
 
 	if deleted {
 		if prefix != "" { // don't insert a tombstone if the entire tree is deleted, all watchers on keys will see the max_index of the tree
-			if err := s.kvsGraveyard.InsertTxn(tx, prefix, idx, entMeta); err != nil {
+			if err := graveyard.InsertTxn(tx, prefix, idx, entMeta); err != nil {
 				return fmt.Errorf("failed adding to graveyard: %s", err)
 			}
 		}
 
-		if err := tx.Insert(tableIndex, &IndexEntry{"kvs", idx}); err != nil {
+		if err := tx.Insert(tableIndex, &IndexEntry{table, idx}); err != nil {
 			return fmt.Errorf("failed updating index: %s", err)
 		}
 	}
 	return nil
 }
 
-func kvsMaxIndex(tx ReadTxn, entMeta acl.EnterpriseMeta) uint64 {
-	return maxIndexTxn(tx, "kvs", "tombstones")
+func kvsMaxIndex(table, tombstones string, tx ReadTxn, entMeta acl.EnterpriseMeta) uint64 {
+	return maxIndexTxn(tx, table, tombstones)
 }
 
-func kvsDeleteWithEntry(tx WriteTxn, entry *structs.DirEntry, idx uint64) error {
+func kvsDeleteWithEntry(table string, tx WriteTxn, entry *structs.DirEntry, idx uint64) error {
 	// Delete the entry and update the index.
-	if err := tx.Delete(tableKVs, entry); err != nil {
+	if err := tx.Delete(table, entry); err != nil {
 		return fmt.Errorf("failed deleting kvs entry: %s", err)
 	}
 
-	if err := tx.Insert(tableIndex, &IndexEntry{tableKVs, idx}); err != nil {
+	if err := tx.Insert(tableIndex, &IndexEntry{table, idx}); err != nil {
 		return fmt.Errorf("failed updating kvs index: %s", err)
 	}
 

@@ -794,7 +794,10 @@ func (s *Store) deleteNodeTxn(tx WriteTxn, idx uint64, nodeName string, entMeta 
 		}
 
 		for _, session := range toDelete {
-			if err := s.deleteSessionTxn(tx, idx, session.ID, &session.EnterpriseMeta); err != nil {
+			if err := s.deleteSessionTxn(tableKVs, s.kvsGraveyard, tx, idx, session.ID, &session.EnterpriseMeta); err != nil {
+				return fmt.Errorf("failed to delete session '%s': %v", session.ID, err)
+			}
+			if err := s.deleteSessionTxn(tablePrivateKVs, s.privateGraveyard, tx, idx, session.ID, &session.EnterpriseMeta); err != nil {
 				return fmt.Errorf("failed to delete session '%s': %v", session.ID, err)
 			}
 		}
@@ -2200,7 +2203,10 @@ func (s *Store) ensureCheckTxn(tx WriteTxn, idx uint64, preserveIndexes bool, hc
 		// Delete the session in a separate loop so we don't trash the
 		// iterator.
 		for _, sess := range sessions {
-			if err := s.deleteSessionTxn(tx, idx, sess.Session, &sess.EnterpriseMeta); err != nil {
+			if err := s.deleteSessionTxn(tableKVs, s.kvsGraveyard, tx, idx, sess.Session, &sess.EnterpriseMeta); err != nil {
+				return fmt.Errorf("failed deleting session: %s", err)
+			}
+			if err := s.deleteSessionTxn(tablePrivateKVs, s.privateGraveyard, tx, idx, sess.Session, &sess.EnterpriseMeta); err != nil {
 				return fmt.Errorf("failed deleting session: %s", err)
 			}
 		}
@@ -2603,7 +2609,10 @@ func (s *Store) deleteCheckTxn(tx WriteTxn, idx uint64, node string, checkID typ
 
 		// Do the delete in a separate loop so we don't trash the iterator.
 		for _, sess := range sessions {
-			if err := s.deleteSessionTxn(tx, idx, sess.Session, &sess.EnterpriseMeta); err != nil {
+			if err := s.deleteSessionTxn(tableKVs, s.kvsGraveyard, tx, idx, sess.Session, &sess.EnterpriseMeta); err != nil {
+				return fmt.Errorf("failed deleting session: %s", err)
+			}
+			if err := s.deleteSessionTxn(tablePrivateKVs, s.privateGraveyard, tx, idx, sess.Session, &sess.EnterpriseMeta); err != nil {
 				return fmt.Errorf("failed deleting session: %s", err)
 			}
 		}

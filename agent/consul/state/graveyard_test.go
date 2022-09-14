@@ -8,7 +8,7 @@ import (
 )
 
 func TestGraveyard_Lifecycle(t *testing.T) {
-	g := NewGraveyard(nil)
+	g := NewGraveyard(nil, tableTombstones)
 
 	// Make a donor state store to steal its database, all prepared for
 	// tombstones.
@@ -115,7 +115,7 @@ func TestGraveyard_GC_Trigger(t *testing.T) {
 	}
 
 	// Make a new graveyard and assign the GC.
-	g := NewGraveyard(gc)
+	g := NewGraveyard(gc, tableTombstones)
 	gc.SetEnabled(true)
 
 	// Make sure there's nothing already expiring.
@@ -168,7 +168,7 @@ func TestGraveyard_GC_Trigger(t *testing.T) {
 }
 
 func TestGraveyard_Snapshot_Restore(t *testing.T) {
-	g := NewGraveyard(nil)
+	g := NewGraveyard(nil, tableTombstones)
 
 	// Make a donor state store to steal its database, all prepared for
 	// tombstones.

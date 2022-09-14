@@ -322,7 +322,7 @@ func (s *Store) SessionDestroy(idx uint64, sessionID string, entMeta *acl.Enterp
 	defer tx.Abort()
 
 	// Call the session deletion.
-	if err := s.deleteSessionTxn(tx, idx, sessionID, entMeta); err != nil {
+	if err := s.deleteSessionTxn(tableKVs, s.kvsGraveyard, tx, idx, sessionID, entMeta); err != nil {
 		return err
 	}
 
@@ -331,7 +331,7 @@ func (s *Store) SessionDestroy(idx uint64, sessionID string, entMeta *acl.Enterp
 
 // deleteSessionTxn is the inner method, which is used to do the actual
 // session deletion and handle session invalidation, etc.
-func (s *Store) deleteSessionTxn(tx WriteTxn, idx uint64, sessionID string, entMeta *acl.EnterpriseMeta) error {
+func (s *Store) deleteSessionTxn(table string, graveyard *Graveyard, tx WriteTxn, idx uint64, sessionID string, entMeta *acl.EnterpriseMeta) error {
 	// Look up the session.
 	if entMeta == nil {
 		entMeta = structs.DefaultEnterpriseMetaInDefaultPartition()
@@ -379,7 +379,7 @@ func (s *Store) deleteSessionTxn(tx WriteTxn, idx uint64, sessionID string, entM
 			// respects the transaction we are in.
 			e := obj.(*structs.DirEntry).Clone()
 			e.Session = ""
-			if err := kvsSetTxn(tx, idx, e, true); err != nil {
+			if err := kvsSetTxn(table, tx, idx, e, true); err != nil {
 				return fmt.Errorf("failed kvs update: %s", err)
 			}
 
@@ -391,7 +391,7 @@ func (s *Store) deleteSessionTxn(tx WriteTxn, idx uint64, sessionID string, entM
 	case structs.SessionKeysDelete:
 		for _, obj := range kvs {
 			e := obj.(*structs.DirEntry)
-			if err := s.kvsDeleteTxn(tx, idx, e.Key, entMeta); err != nil {
+			if err := s.kvsDeleteTxn(table, graveyard, tx, idx, e.Key, entMeta); err != nil {
 				return fmt.Errorf("failed kvs delete: %s", err)
 			}
 
