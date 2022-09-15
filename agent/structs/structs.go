@@ -85,6 +85,7 @@ const (
 	PeeringTrustBundleWriteType                 = 38
 	PeeringTrustBundleDeleteType                = 39
 	PeeringSecretsWriteType                     = 40
+	TypedBagRequestType                         = 41
 )
 
 const (
@@ -151,6 +152,7 @@ var requestTypeStrings = map[MessageType]string{
 	PeeringTrustBundleWriteType:     "PeeringTrustBundle",
 	PeeringTrustBundleDeleteType:    "PeeringTrustBundleDelete",
 	PeeringSecretsWriteType:         "PeeringSecret",
+	TypedBagRequestType:             "TypedBagRequest",
 }
 
 const (

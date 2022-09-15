@@ -19,4 +19,5 @@ func init() {
 	registerEndpoint(func(s *Server) interface{} { return &Session{s, s.loggers.Named(logging.Session)} })
 	registerEndpoint(func(s *Server) interface{} { return &Status{s} })
 	registerEndpoint(func(s *Server) interface{} { return &Txn{s, s.loggers.Named(logging.Transaction)} })
+	registerEndpoint(func(s *Server) interface{} { return &TypedBag{s, s.loggers.Named(logging.TypedBag)} })
 }

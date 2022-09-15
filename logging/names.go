@@ -64,4 +64,5 @@ const (
 	XDSCapacityController string = "xds_capacity_controller"
 	Vault                 string = "vault"
 	Health                string = "health"
+	TypedBag              string = "typed_bags"
 )

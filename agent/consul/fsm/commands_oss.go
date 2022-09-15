@@ -27,6 +27,10 @@ var CommandsSummaries = []prometheus.SummaryDefinition{
 		Help: "Measures the time it takes to apply the given KV operation to the FSM.",
 	},
 	{
+		Name: []string{"fsm", "typed-bag"},
+		Help: "Measures the time it takes to apply the given TypedBag operation to the FSM.",
+	},
+	{
 		Name: []string{"fsm", "session"},
 		Help: "Measures the time it takes to apply the given session operation to the FSM.",
 	},
@@ -142,6 +146,7 @@ func init() {
 	registerCommand(structs.PeeringTrustBundleWriteType, (*FSM).applyPeeringTrustBundleWrite)
 	registerCommand(structs.PeeringTrustBundleDeleteType, (*FSM).applyPeeringTrustBundleDelete)
 	registerCommand(structs.PeeringSecretsWriteType, (*FSM).applyPeeringSecretsWrite)
+	registerCommand(structs.TypedBagRequestType, (*FSM).applyTypedBagOperation)
 }
 
 func (c *FSM) applyRegister(buf []byte, index uint64) interface{} {
@@ -271,6 +276,31 @@ func (c *FSM) applyTombstoneOperation(buf []byte, index uint64) interface{} {
 	default:
 		c.logger.Warn("Invalid Tombstone operation", "operation", req.Op)
 		return fmt.Errorf("Invalid Tombstone operation '%s'", req.Op)
+	}
+}
+
+func (c *FSM) applyTypedBagOperation(buf []byte, index uint64) interface{} {
+	var req structs.TypedBagRequest
+	if err := structs.Decode(buf, &req); err != nil {
+		panic(fmt.Errorf("failed to decode request: %v", err))
+	}
+	switch req.Op {
+	case structs.TypedBagDelete:
+		defer metrics.MeasureSinceWithLabels([]string{"fsm", "typed-bag", req.Bag.KindVersion.Kind}, time.Now(), []metrics.Label{{Name: "op", Value: "delete"}})
+		if err := c.state.DeleteTypedBag(index, req.Bag.KindVersion, req.Bag.Name, req.Bag.EnterpriseMeta); err != nil {
+			return err
+		}
+		return true
+	case structs.TypedBagUpsert:
+		defer metrics.MeasureSinceWithLabels([]string{"fsm", "typed-bag", req.Bag.KindVersion.Kind}, time.Now(), []metrics.Label{{Name: "op", Value: "upsert"}})
+		if err := c.state.EnsureTypedBag(index, &req.Bag); err != nil {
+			return err
+		}
+		return true
+	default:
+		err := fmt.Errorf("Invalid typed bag operation '%s'", req.Op)
+		c.logger.Warn("Invalid typed bag operation", "operation", req.Op)
+		return err
 	}
 }
 

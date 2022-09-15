@@ -43,6 +43,7 @@ func init() {
 	registerRestorer(structs.PeeringWriteType, restorePeering)
 	registerRestorer(structs.PeeringTrustBundleWriteType, restorePeeringTrustBundle)
 	registerRestorer(structs.PeeringSecretsWriteType, restorePeeringSecrets)
+	registerRestorer(structs.TypedBagRequestType, restoreTypedBag)
 }
 
 func persistOSS(s *snapshot, sink raft.SnapshotSink, encoder *codec.Encoder) error {
@@ -974,4 +975,12 @@ func restorePeeringSecrets(header *SnapshotHeader, restore *state.Restore, decod
 		return err
 	}
 	return nil
+}
+
+func restoreTypedBag(header *SnapshotHeader, restore *state.Restore, decoder *codec.Decoder) error {
+	var req structs.TypedBagRequest
+	if err := decoder.Decode(&req); err != nil {
+		return err
+	}
+	return restore.TypedBag(&req.Bag)
 }
