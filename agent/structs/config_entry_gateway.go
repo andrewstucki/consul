@@ -145,7 +145,7 @@ func (e *GatewayConfigEntry) Validate() error {
 func (e *GatewayConfigEntry) CanRead(authz acl.Authorizer) error {
 	var authzContext acl.AuthorizerContext
 	e.FillAuthzContext(&authzContext)
-	return authz.ToAllowAuthorizer().ServiceReadAllowed(e.Name, &authzContext)
+	return authz.ToAllowAuthorizer().MeshReadAllowed(&authzContext)
 }
 
 func (e *GatewayConfigEntry) CanWrite(authz acl.Authorizer) error {
@@ -195,4 +195,66 @@ type TCPService struct {
 type GatewayReference struct {
 	Name               string
 	acl.EnterpriseMeta `hcl:",squash" mapstructure:",squash"`
+}
+
+func (e *TCPRouteConfigEntry) GetKind() string {
+	return TCPRoute
+}
+
+func (e *TCPRouteConfigEntry) GetName() string {
+	if e == nil {
+		return ""
+	}
+
+	return e.Name
+}
+
+func (e *TCPRouteConfigEntry) GetMeta() map[string]string {
+	if e == nil {
+		return nil
+	}
+	return e.Meta
+}
+
+func (e *TCPRouteConfigEntry) Normalize() error {
+	if e == nil {
+		return fmt.Errorf("config entry is nil")
+	}
+
+	e.Kind = TCPRoute
+	e.EnterpriseMeta.Normalize()
+
+	return nil
+}
+
+func (e *TCPRouteConfigEntry) Validate() error {
+	return nil
+}
+
+func (e *TCPRouteConfigEntry) CanRead(authz acl.Authorizer) error {
+	var authzContext acl.AuthorizerContext
+	e.FillAuthzContext(&authzContext)
+	return authz.ToAllowAuthorizer().MeshReadAllowed(&authzContext)
+}
+
+func (e *TCPRouteConfigEntry) CanWrite(authz acl.Authorizer) error {
+	var authzContext acl.AuthorizerContext
+	e.FillAuthzContext(&authzContext)
+	return authz.ToAllowAuthorizer().MeshWriteAllowed(&authzContext)
+}
+
+func (e *TCPRouteConfigEntry) GetRaftIndex() *RaftIndex {
+	if e == nil {
+		return &RaftIndex{}
+	}
+
+	return &e.RaftIndex
+}
+
+func (e *TCPRouteConfigEntry) GetEnterpriseMeta() *acl.EnterpriseMeta {
+	if e == nil {
+		return nil
+	}
+
+	return &e.EnterpriseMeta
 }

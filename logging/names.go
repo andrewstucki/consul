@@ -23,6 +23,7 @@ const (
 	FederationState       string = "federation_state"
 	FSM                   string = "fsm"
 	GatewayController     string = "gateway_controller"
+	TCPRouteController    string = "tcp_route_controller"
 	GatewayLocator        string = "gateway_locator"
 	HTTP                  string = "http"
 	IngressGateway        string = "ingress_gateway"

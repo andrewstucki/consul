@@ -21,10 +21,10 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req controller.Reques
 	return nil
 }
 
-// Register creates a new Controller with a GatewayReconciler
-func Register(store controller.Store, logger hclog.Logger) controller.Controller {
+// GatewayController creates a new Controller with a GatewayReconciler
+func GatewayController(store controller.Store, logger hclog.Logger) controller.Controller {
 	return controller.New(store, &GatewayReconciler{
 		store:  store,
 		logger: logger,
-	}).Watch(structs.ServiceDefaults, nil)
+	}).Watch(structs.Gateway, nil)
 }

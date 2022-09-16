@@ -13,7 +13,10 @@ func (s *Server) runControllers(ctx context.Context) error {
 
 	store := s.FSM().State()
 	group.Go(func() error {
-		return gateway.Register(store, s.logger.Named(logging.GatewayController)).Start(groupCtx)
+		return gateway.GatewayController(store, s.logger.Named(logging.GatewayController)).Start(groupCtx)
+	})
+	group.Go(func() error {
+		return gateway.TCPRouteController(store, s.logger.Named(logging.TCPRouteController)).Start(groupCtx)
 	})
 
 	return group.Wait()

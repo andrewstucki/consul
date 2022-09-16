@@ -483,8 +483,21 @@ func validateProposedConfigEntryInGraph(
 	case structs.ServiceRouter:
 	case structs.ServiceSplitter:
 	case structs.ServiceResolver:
+	case structs.Gateway:
+		err := checkGatewayClash(tx, kindName, structs.IngressGateway)
+		if err != nil {
+			return err
+		}
+		err = checkGatewayClash(tx, kindName, structs.TerminatingGateway)
+		if err != nil {
+			return err
+		}
 	case structs.IngressGateway:
 		err := checkGatewayClash(tx, kindName, structs.TerminatingGateway)
+		if err != nil {
+			return err
+		}
+		err = checkGatewayClash(tx, kindName, structs.Gateway)
 		if err != nil {
 			return err
 		}
@@ -493,9 +506,14 @@ func validateProposedConfigEntryInGraph(
 		if err != nil {
 			return err
 		}
+		err = checkGatewayClash(tx, kindName, structs.Gateway)
+		if err != nil {
+			return err
+		}
 	case structs.ServiceIntentions:
 	case structs.MeshConfig:
 	case structs.ExportedServices:
+	case structs.TCPRoute:
 	default:
 		return fmt.Errorf("unhandled kind %q during validation of %q", kindName.Kind, kindName.Name)
 	}
