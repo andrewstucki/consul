@@ -29,6 +29,7 @@ const (
 	ServiceSplitter    string = "service-splitter"
 	ServiceResolver    string = "service-resolver"
 	IngressGateway     string = "ingress-gateway"
+	Gateway            string = "gateway"
 	TerminatingGateway string = "terminating-gateway"
 	ServiceIntentions  string = "service-intentions"
 	MeshConfig         string = "mesh"

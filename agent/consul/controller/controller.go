@@ -71,7 +71,6 @@ type controller struct {
 
 // New returns a new Controller associated with the given state store and reconciler.
 func New(store Store, reconciler Reconciler) Controller {
-	// Create controller with dependencies set
 	return &controller{
 		reconciler:  reconciler,
 		store:       store,

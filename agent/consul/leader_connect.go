@@ -52,6 +52,9 @@ func (s *Server) startConnectLeader(ctx context.Context) error {
 	s.leaderRoutineManager.Start(ctx, caSigningMetricRoutineName, signingCAExpiryMonitor(s).Monitor)
 	s.leaderRoutineManager.Start(ctx, virtualIPCheckRoutineName, s.runVirtualIPVersionCheck)
 
+	// run controllers
+	s.leaderRoutineManager.Start(ctx, controllersName, s.runControllers)
+
 	return s.startIntentionConfigEntryMigration(ctx)
 }
 

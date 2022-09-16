@@ -389,3 +389,146 @@ message IntentionHTTPHeaderPermission {
   string Regex = 6;
   bool Invert = 7;
 }
+
+// mog annotation:
+//
+// target=github.com/hashicorp/consul/agent/structs.GatewayConfigEntry
+// output=config_entry.gen.go
+// name=Structs
+// ignore-fields=Kind,Name,RaftIndex,EnterpriseMeta
+message Gateway {
+  string Name = 1;
+  repeated GatewayListener Listeners = 2;
+  map<string, string> Meta = 3;
+  Status Status = 4;
+}
+
+// mog annotation:
+//
+// target=github.com/hashicorp/consul/agent/structs.GatewayListener
+// output=config_entry.gen.go
+// name=Structs
+message GatewayListener {
+  // mog: func-to=int func-from=int32
+  int32 Port = 1;
+  string Protocol = 2;
+  string Name = 3;
+  GatewayTLSConfiguration TLS = 4;
+  GatewayListenerState State = 5;
+}
+
+// mog annotation:
+//
+// target=github.com/hashicorp/consul/agent/structs.GatewayListenerState
+// output=config_entry.gen.go
+// name=Structs
+message GatewayListenerState {
+  repeated RouteReference HTTPRoutes = 1;
+  repeated RouteReference TCPRoutes = 2;
+}
+
+// mog annotation:
+//
+// target=github.com/hashicorp/consul/agent/structs.RouteReference
+// output=config_entry.gen.go
+// name=Structs
+message RouteReference {
+  string Name = 1;
+  // mog: func-to=enterpriseMetaToStructs func-from=enterpriseMetaFromStructs
+  common.EnterpriseMeta EnterpriseMeta = 2;
+}
+
+// mog annotation:
+//
+// target=github.com/hashicorp/consul/agent/structs.GatewayTLSConfiguration
+// output=config_entry.gen.go
+// name=Structs
+message GatewayTLSConfiguration {
+  repeated GatewayTLSCertificates Certificates = 1;
+  // mog: func-from=tlsVersionFromStructs func-to=tlsVersionToStructs
+  string MinVersion = 2;
+  // mog: func-from=tlsVersionFromStructs func-to=tlsVersionToStructs
+  string MaxVersion = 3;
+  // mog: func-from=cipherSuitesFromStructs func-to=cipherSuitesToStructs
+  repeated string CipherSuites = 4;
+}
+
+// mog annotation:
+//
+// target=github.com/hashicorp/consul/agent/structs.GatewayTLSCertificates
+// output=config_entry.gen.go
+// name=Structs
+message GatewayTLSCertificates {
+  GatewayVaultKVCertificate VaultKV = 1;
+}
+
+// mog annotation:
+//
+// target=github.com/hashicorp/consul/agent/structs.GatewayVaultKVCertificate
+// output=config_entry.gen.go
+// name=Structs
+message GatewayVaultKVCertificate {
+  string Path = 1;
+  string ChainField = 2;
+  string PrivateKeyField = 3;
+}
+
+// mog annotation:
+//
+// target=github.com/hashicorp/consul/agent/structs.Status
+// output=config_entry.gen.go
+// name=Structs
+message Status {
+  repeated Condition Conditions = 1;
+}
+
+// mog annotation:
+//
+// target=github.com/hashicorp/consul/agent/structs.Condition
+// output=config_entry.gen.go
+// name=Structs
+message Condition {
+  string Status = 1;
+  int64 ObservedGeneration = 2;
+  uint64 LastTransitionTime = 3;
+  string Reason = 4;
+  string Message = 5;
+}
+
+// mog annotation:
+//
+// target=github.com/hashicorp/consul/agent/structs.TCPRouteConfigEntry
+// output=config_entry.gen.go
+// name=Structs
+// ignore-fields=Kind,Name,RaftIndex,EnterpriseMeta
+message TCPRoute {
+  string Name = 1;
+  repeated GatewayReference Gateways = 2;
+  repeated TCPService Services = 3;
+  map<string, string> Meta = 4;
+  Status Status = 5;
+}
+
+// mog annotation:
+//
+// target=github.com/hashicorp/consul/agent/structs.GatewayReference
+// output=config_entry.gen.go
+// name=Structs
+message GatewayReference {
+  string Name = 1;
+  // mog: func-to=enterpriseMetaToStructs func-from=enterpriseMetaFromStructs
+  common.EnterpriseMeta EnterpriseMeta = 2;
+}
+
+// mog annotation:
+//
+// target=github.com/hashicorp/consul/agent/structs.TCPService
+// output=config_entry.gen.go
+// name=Structs
+message TCPService {
+  string Name = 1;
+  // mog: func-to=int func-from=int32
+  int32 Weight = 2;
+  // mog: func-to=enterpriseMetaToStructs func-from=enterpriseMetaFromStructs
+  common.EnterpriseMeta EnterpriseMeta = 3;
+}

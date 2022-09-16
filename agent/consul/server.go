@@ -129,6 +129,7 @@ const (
 	peeringStreamsRoutineName             = "streaming peering resources"
 	peeringDeletionRoutineName            = "peering deferred deletion"
 	peeringStreamsMetricsRoutineName      = "metrics for streaming peering resources"
+	controllersName                       = "reconciliation controllers"
 )
 
 var (
