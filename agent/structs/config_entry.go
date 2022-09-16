@@ -29,11 +29,12 @@ const (
 	ServiceSplitter    string = "service-splitter"
 	ServiceResolver    string = "service-resolver"
 	IngressGateway     string = "ingress-gateway"
-	Gateway            string = "gateway"
 	TerminatingGateway string = "terminating-gateway"
 	ServiceIntentions  string = "service-intentions"
 	MeshConfig         string = "mesh"
 	ExportedServices   string = "exported-services"
+	Gateway            string = "gateway"
+	TCPRoute           string = "tcp-route"
 
 	ProxyConfigGlobal string = "global"
 	MeshConfigMesh    string = "mesh"

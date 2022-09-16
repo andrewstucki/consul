@@ -444,7 +444,7 @@ message RouteReference {
 // output=config_entry.gen.go
 // name=Structs
 message GatewayTLSConfiguration {
-  repeated GatewayTLSCertificates Certificates = 1;
+  repeated GatewayTLSCertificate Certificates = 1;
   // mog: func-from=tlsVersionFromStructs func-to=tlsVersionToStructs
   string MinVersion = 2;
   // mog: func-from=tlsVersionFromStructs func-to=tlsVersionToStructs
@@ -455,10 +455,10 @@ message GatewayTLSConfiguration {
 
 // mog annotation:
 //
-// target=github.com/hashicorp/consul/agent/structs.GatewayTLSCertificates
+// target=github.com/hashicorp/consul/agent/structs.GatewayTLSCertificate
 // output=config_entry.gen.go
 // name=Structs
-message GatewayTLSCertificates {
+message GatewayTLSCertificate {
   GatewayVaultKVCertificate VaultKV = 1;
 }
 
