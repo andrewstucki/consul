@@ -39,6 +39,9 @@ type Controller interface {
 	// Request retry rate limiter. This should only ever be called prior to
 	// running Start.
 	WithBackoff(base, max time.Duration) Controller
+	// WithWorkers sets the number of worker goroutines used to process the queue
+	// this defaults to 1 goroutine.
+	WithWorkers(i int) Controller
 	// WithQueueFactory allows a Controller to replace its underlying work queue
 	// implementation. This is most useful for testing. This should only ever be called
 	// prior to running Start.
@@ -56,6 +59,8 @@ type controller struct {
 	// makeQueue is the factory used for creating the work queue, generally
 	// this shouldn't be touched, but can be updated for testing purposes
 	makeQueue func(ctx context.Context, baseBackoff time.Duration, maxBackoff time.Duration) WorkQueue
+	// workers is the number of workers to use to process data
+	workers int
 	// work is the internal work queue that pending Requests are added to
 	work WorkQueue
 	// baseBackoff is the starting backoff time for the work queue's rate limiter
@@ -74,6 +79,7 @@ func New(store Store, reconciler Reconciler) Controller {
 	return &controller{
 		reconciler:  reconciler,
 		store:       store,
+		workers:     1,
 		baseBackoff: 5 * time.Millisecond,
 		maxBackoff:  1000 * time.Second,
 		makeQueue:   RunWorkQueue,
@@ -94,6 +100,16 @@ func (c *controller) Watch(kind string, entMeta *acl.EnterpriseMeta) Controller 
 func (c *controller) WithBackoff(base, max time.Duration) Controller {
 	c.baseBackoff = base
 	c.maxBackoff = max
+	return c
+}
+
+// WithWorkers sets the number of worker goroutines used to process the queue
+// this defaults to 1 goroutine.
+func (c *controller) WithWorkers(i int) Controller {
+	if i <= 0 {
+		i = 1
+	}
+	c.workers = i
 	return c
 }
 
@@ -153,19 +169,21 @@ func (c *controller) Start(ctx context.Context) error {
 		})
 	}
 
-	go func() {
-		for {
-			request, shutdown := c.work.Get()
-			if shutdown {
-				// Stop working
-				return
+	for i := 0; i < c.workers; i++ {
+		group.Go(func() error {
+			for {
+				request, shutdown := c.work.Get()
+				if shutdown {
+					// Stop working
+					return nil
+				}
+				c.reconcileHandler(groupCtx, request)
+				// Done is called here because it is required to be called
+				// when we've finished processing each request
+				c.work.Done(request)
 			}
-			c.reconcileHandler(groupCtx, request)
-			// Done is called here because it is required to be called
-			// when we've finished processing each request
-			c.work.Done(request)
-		}
-	}()
+		})
+	}
 
 	<-groupCtx.Done()
 	return nil
