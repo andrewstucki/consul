@@ -9,8 +9,9 @@ import (
 // Store is the state store interface required for the Controller
 type Store interface {
 	AbandonCh() <-chan struct{}
-	EnsureConfigEntryCAS(idx uint64, cidx uint64, conf structs.ConfigEntry) (bool, error)
+	EnsureConfigEntryCAS(idx, cidx uint64, conf structs.ConfigEntry) (bool, error)
 	ConfigEntry(ws memdb.WatchSet, kind string, name string, entMeta *acl.EnterpriseMeta) (uint64, structs.ConfigEntry, error)
+	UpdateConfigEntryCAS(idx, cidx uint64, conf structs.ConfigEntry) (bool, error)
 	DeleteConfigEntryCAS(idx uint64, cidx uint64, conf structs.ConfigEntry) (bool, error)
 	ConfigEntriesByKind(ws memdb.WatchSet, kind string, entMeta *acl.EnterpriseMeta) (uint64, []structs.ConfigEntry, error)
 }

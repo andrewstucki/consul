@@ -211,7 +211,7 @@ func (s *Store) EnsureConfigEntry(idx uint64, conf structs.ConfigEntry) error {
 	tx := s.db.WriteTxn(idx)
 	defer tx.Abort()
 
-	if err := ensureConfigEntryTxn(tx, idx, conf); err != nil {
+	if err := ensureConfigEntryTxn(tx, idx, false, conf); err != nil {
 		return err
 	}
 
@@ -219,7 +219,7 @@ func (s *Store) EnsureConfigEntry(idx uint64, conf structs.ConfigEntry) error {
 }
 
 // ensureConfigEntryTxn upserts a config entry inside of a transaction.
-func ensureConfigEntryTxn(tx WriteTxn, idx uint64, conf structs.ConfigEntry) error {
+func ensureConfigEntryTxn(tx WriteTxn, idx uint64, skipUpdateOver bool, conf structs.ConfigEntry) error {
 	q := newConfigEntryQuery(conf)
 	existing, err := tx.First(tableConfigEntries, indexID, q)
 	if err != nil {
@@ -231,14 +231,25 @@ func ensureConfigEntryTxn(tx WriteTxn, idx uint64, conf structs.ConfigEntry) err
 		existingIdx := existing.(structs.ConfigEntry).GetRaftIndex()
 		raftIndex.CreateIndex = existingIdx.CreateIndex
 
-		// Handle optional upsert logic.
-		if updatableConf, ok := conf.(structs.UpdatableConfigEntry); ok {
-			if err := updatableConf.UpdateOver(existing.(structs.ConfigEntry)); err != nil {
-				return err
+		if !skipUpdateOver {
+			// Handle optional upsert logic.
+			if updatableConf, ok := conf.(structs.UpdatableConfigEntry); ok {
+				if err := updatableConf.UpdateOver(existing.(structs.ConfigEntry)); err != nil {
+					return err
+				}
 			}
 		}
 	} else {
 		raftIndex.CreateIndex = idx
+
+		if !skipUpdateOver {
+			// Handle optional logic for an insert.
+			if updatableConf, ok := conf.(structs.UpdatableConfigEntry); ok {
+				if err := updatableConf.UpdateOver(nil); err != nil {
+					return err
+				}
+			}
+		}
 	}
 	raftIndex.ModifyIndex = idx
 
@@ -281,7 +292,46 @@ func (s *Store) EnsureConfigEntryCAS(idx, cidx uint64, conf structs.ConfigEntry)
 		return false, nil
 	}
 
-	if err := ensureConfigEntryTxn(tx, idx, conf); err != nil {
+	if err := ensureConfigEntryTxn(tx, idx, false, conf); err != nil {
+		return false, err
+	}
+
+	err = tx.Commit()
+	return err == nil, err
+}
+
+// UpdateConfigEntryCAS is called to do a check-and-set update of a given config entry.
+// This method should not be exposed to users as it explicitly skips the UpdateOver logic
+// that enforces user-immutability of some objects stored in state.
+func (s *Store) UpdateConfigEntryCAS(idx, cidx uint64, conf structs.ConfigEntry) (bool, error) {
+	if cidx == 0 {
+		return false, errors.New("cannot have a ModifyIndex of 0 when doing an update")
+	}
+
+	tx := s.db.WriteTxn(idx)
+	defer tx.Abort()
+
+	// Check for existing configuration.
+	existing, err := tx.First(tableConfigEntries, indexID, newConfigEntryQuery(conf))
+	if err != nil {
+		return false, fmt.Errorf("failed configuration lookup: %s", err)
+	}
+	if existing == nil {
+		return false, errors.New("no config entry found")
+	}
+
+	// Check if the we should do the set.
+	existingIdx := existing.(structs.ConfigEntry).GetRaftIndex().ModifyIndex
+	if existing != nil && cidx != existingIdx {
+		return false, nil
+	}
+
+	// At this point we have alread done the existence check
+	// so we can just go through the normal "upsert" logic,
+	// knowing that this will only trigger if the entry already
+	// exists. Set the skipUpdateOver flag so that we can update
+	// the entry with even user-immutable state.
+	if err := ensureConfigEntryTxn(tx, idx, true, conf); err != nil {
 		return false, err
 	}
 
