@@ -97,7 +97,7 @@ func (s *handlerGateway) handleUpdate(ctx context.Context, u UpdateEvent, snap *
 						Datacenter:     s.source.Datacenter,
 						QueryOptions:   structs.QueryOptions{Token: s.token},
 						EnterpriseMeta: route.EnterpriseMeta,
-					}, DestinationConfigEntryID+route.Name, s.ch)
+					}, tcpRouteIDPrefix+name.String(), s.ch)
 					if err != nil {
 						cancel()
 						return err
@@ -116,9 +116,9 @@ func (s *handlerGateway) handleUpdate(ctx context.Context, u UpdateEvent, snap *
 
 		// do the rest of the gateway struct initialization here
 
-	case u.CorrelationID == gatewayServicesWatchID:
-
-		// do upstream watch here
+	case strings.HasPrefix(u.CorrelationID, tcpRouteIDPrefix):
+	
+		// do tcp upstream watch here
 
 	default:
 			return fmt.Errorf("watch fired for unsupported kind: %s", snap.Kind)

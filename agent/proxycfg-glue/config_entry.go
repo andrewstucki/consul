@@ -60,6 +60,10 @@ func newConfigEntryRequest(req *structs.ConfigEntryQuery, deps ServerDataSourceD
 		topic = pbsubscribe.Topic_ServiceResolver
 	case structs.IngressGateway:
 		topic = pbsubscribe.Topic_IngressGateway
+	case structs.Gateway:
+		topic = pbsubscribe.Topic_Gateway
+	case structs.TCPRoute:
+		topic = pbsubscribe.Topic_TCPRoute
 	default:
 		return nil, fmt.Errorf("cannot map config entry kind: %s to a topic", req.Kind)
 	}

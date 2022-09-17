@@ -35,6 +35,7 @@ const (
 	serviceLeafIDPrefix                = "service-leaf:"
 	serviceConfigIDPrefix              = "service-config:"
 	serviceResolverIDPrefix            = "service-resolver:"
+	tcpRouteIDPrefix                   = "tcp-route:"
 	serviceIntentionsIDPrefix          = "service-intentions:"
 	intentionUpstreamsID               = "intention-upstreams"
 	peeredUpstreamsID                  = "peered-upstreams"
@@ -200,6 +201,8 @@ func newKindHandler(config stateConfig, s serviceInstance, ch chan UpdateEvent) 
 		handler = &handlerMeshGateway{handlerState: h}
 	case structs.ServiceKindIngressGateway:
 		handler = &handlerIngressGateway{handlerState: h}
+	case structs.ServiceKindGateway:
+		handler = &handlerGateway{handlerState: h}
 	default:
 		return nil, errors.New("not a connect-proxy, terminating-gateway, mesh-gateway, or ingress-gateway")
 	}
