@@ -170,6 +170,10 @@ func (e *GatewayConfigEntry) GetEnterpriseMeta() *acl.EnterpriseMeta {
 	return &e.EnterpriseMeta
 }
 
+func (e *GatewayConfigEntry) ShouldUpdate(existing ControlledConfigEntry) bool {
+	return true
+}
+
 // TCPRouteConfigEntry manages the configuration for a TCP gateway route.
 type TCPRouteConfigEntry struct {
 	// Kind of the config entry. This will be set to structs.TCPRoute.
@@ -257,4 +261,8 @@ func (e *TCPRouteConfigEntry) GetEnterpriseMeta() *acl.EnterpriseMeta {
 	}
 
 	return &e.EnterpriseMeta
+}
+
+func (e *TCPRouteConfigEntry) ShouldUpdate(existing ControlledConfigEntry) bool {
+	return true
 }

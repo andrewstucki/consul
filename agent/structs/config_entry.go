@@ -97,6 +97,19 @@ type WarningConfigEntry interface {
 	ConfigEntry
 }
 
+// ControlledConfigEntry is an optional interface implemented by a ConfigEntry
+// if it is managed by a server-side control loop.
+type ControlledConfigEntry interface {
+	// ShouldUpdate controls whether or not we should update the ConfigEntry when
+	// a controller does an update operation.
+	ShouldUpdate(existing ControlledConfigEntry) bool
+
+	// this takes UpdatableConfigEntry since we generally want to use UpdateOver
+	// to ensure that controlled fields in the entry remain immutable by user
+	// requests even if they're exposed on say API reads
+	UpdatableConfigEntry
+}
+
 // ServiceConfiguration is the top-level struct for the configuration of a service
 // across the entire cluster.
 type ServiceConfigEntry struct {

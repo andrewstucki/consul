@@ -300,14 +300,11 @@ func (s *Store) EnsureConfigEntryCAS(idx, cidx uint64, conf structs.ConfigEntry)
 	return err == nil, err
 }
 
-// UpdateConfigEntryCAS is called to do a check-and-set update of a given config entry.
-// This method should not be exposed to users as it explicitly skips the UpdateOver logic
-// that enforces user-immutability of some objects stored in state.
-func (s *Store) UpdateConfigEntryCAS(idx, cidx uint64, conf structs.ConfigEntry) (bool, error) {
-	if cidx == 0 {
-		return false, errors.New("cannot have a ModifyIndex of 0 when doing an update")
-	}
-
+// ControlledUpdateConfigEntry is called to do an update operation of a config entry
+// from a control loop. This method should not be exposed to users as it explicitly
+// skips the UpdateOver logic that enforces user-immutability of some objects stored
+// it is intended to only be called from server-side control loops.
+func (s *Store) ControlledUpdateConfigEntry(idx uint64, conf structs.ControlledConfigEntry) (bool, error) {
 	tx := s.db.WriteTxn(idx)
 	defer tx.Abort()
 
@@ -321,8 +318,7 @@ func (s *Store) UpdateConfigEntryCAS(idx, cidx uint64, conf structs.ConfigEntry)
 	}
 
 	// Check if the we should do the set.
-	existingIdx := existing.(structs.ConfigEntry).GetRaftIndex().ModifyIndex
-	if existing != nil && cidx != existingIdx {
+	if !conf.ShouldUpdate(existing.(structs.ControlledConfigEntry)) {
 		return false, nil
 	}
 

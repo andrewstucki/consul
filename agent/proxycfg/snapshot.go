@@ -579,6 +579,28 @@ func (c *configSnapshotMeshGateway) isEmptyPeering() bool {
 		!c.PeeringTrustBundlesSet
 }
 
+type configSnapshotGateway struct {
+	ConfigSnapshotUpstreams
+
+	TCPRoutes watch.Map[structs.ServiceName, *structs.TCPRouteConfigEntry]
+
+	// TLSConfig is the gateway-level TLS configuration. Listener/service level
+	// config is preserved in the Listeners map below.
+	TLSConfig structs.GatewayTLSConfiguration
+
+	// GatewayConfigLoaded is used to determine if we have received the initial
+	// gateway config entry yet.
+	GatewayConfigLoaded bool
+
+	// LeafCertWatchCancel is a CancelFunc to use when refreshing this gateway's
+	// leaf cert watch with different parameters.
+	LeafCertWatchCancel context.CancelFunc
+
+	// Listeners is the original listener config from the ingress-gateway config
+	// entry to save us trying to pass fields through Upstreams
+	Listeners map[IngressListenerKey]structs.GatewayListener
+}
+
 type configSnapshotIngressGateway struct {
 	ConfigSnapshotUpstreams
 
@@ -671,6 +693,9 @@ type ConfigSnapshot struct {
 
 	// ingress-gateway specific
 	IngressGateway configSnapshotIngressGateway
+
+	// api-gateway specific
+	Gateway configSnapshotGateway
 }
 
 // Valid returns whether or not the snapshot has all required fields filled yet.
