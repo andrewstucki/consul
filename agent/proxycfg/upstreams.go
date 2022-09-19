@@ -72,6 +72,9 @@ func (s *handlerUpstreams) handleUpdateUpstreams(ctx context.Context, u UpdateEv
 				return nil
 			}
 
+		case structs.ServiceKindGateway:
+			s.logger.Trace("discovery-chain watch fired for gateway upstream", "upstream", uid)
+
 		case structs.ServiceKindConnectProxy:
 			explicit := snap.ConnectProxy.UpstreamConfig[uid].HasLocalPortOrSocket()
 			implicit := snap.ConnectProxy.IsImplicitUpstream(uid)
@@ -496,6 +499,8 @@ func (s *handlerUpstreams) watchDiscoveryChain(ctx context.Context, snap *Config
 	switch s.kind {
 	case structs.ServiceKindIngressGateway:
 		watchedDiscoveryChains = snap.IngressGateway.WatchedDiscoveryChains
+	case structs.ServiceKindGateway:
+		watchedDiscoveryChains = snap.Gateway.WatchedDiscoveryChains
 	case structs.ServiceKindConnectProxy:
 		watchedDiscoveryChains = snap.ConnectProxy.WatchedDiscoveryChains
 	default:

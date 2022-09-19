@@ -3,6 +3,7 @@ package proxycfg
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/consul/agent/proxycfg/internal/watch"
 	"github.com/hashicorp/consul/agent/structs"
@@ -121,7 +122,7 @@ func (s *handlerGateway) handleUpdate(ctx context.Context, u UpdateEvent, snap *
 		// do tcp upstream watch here
 
 	default:
-			return fmt.Errorf("watch fired for unsupported kind: %s", snap.Kind)
+		return (*handlerUpstreams)(s).handleUpdateUpstreams(ctx, u, snap)
 	}
 
 	return nil

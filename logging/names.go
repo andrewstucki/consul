@@ -22,6 +22,7 @@ const (
 	Envoy                 string = "envoy"
 	FederationState       string = "federation_state"
 	FSM                   string = "fsm"
+	Gateway               string = "gateway"
 	GatewayController     string = "gateway_controller"
 	TCPRouteController    string = "tcp_route_controller"
 	GatewayLocator        string = "gateway_locator"

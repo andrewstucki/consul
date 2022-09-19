@@ -12,6 +12,8 @@ enum Kind {
   KindServiceResolver = 2;
   KindIngressGateway = 3;
   KindServiceIntentions = 4;
+  KindGateway = 5;
+  KindTCPRoute = 6;
 }
 
 message ConfigEntry {
@@ -26,6 +28,8 @@ message ConfigEntry {
     ServiceResolver ServiceResolver = 6;
     IngressGateway IngressGateway = 7;
     ServiceIntentions ServiceIntentions = 8;
+    Gateway Gateway = 9;
+    TCPRoute TCPRoute = 10;
   }
 }
 

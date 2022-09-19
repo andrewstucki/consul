@@ -64,6 +64,8 @@ func (s *ResourceGenerator) listenersFromSnapshot(cfgSnap *proxycfg.ConfigSnapsh
 		return s.listenersFromSnapshotGateway(cfgSnap)
 	case structs.ServiceKindIngressGateway:
 		return s.listenersFromSnapshotGateway(cfgSnap)
+	case structs.ServiceKindGateway:
+		return s.listenersFromSnapshotGateway(cfgSnap)
 	default:
 		return nil, fmt.Errorf("Invalid service kind: %v", cfgSnap.Kind)
 	}
@@ -816,6 +818,12 @@ func (s *ResourceGenerator) listenersFromSnapshotGateway(cfgSnap *proxycfg.Confi
 			}
 		case structs.ServiceKindIngressGateway:
 			listeners, err := s.makeIngressGatewayListeners(a.Address, cfgSnap)
+			if err != nil {
+				return nil, err
+			}
+			resources = append(resources, listeners...)
+		case structs.ServiceKindGateway:
+			listeners, err := s.makeGatewayListeners(a.Address, cfgSnap)
 			if err != nil {
 				return nil, err
 			}

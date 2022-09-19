@@ -36,6 +36,8 @@ func (s *ResourceGenerator) routesFromSnapshot(cfgSnap *proxycfg.ConfigSnapshot)
 		return s.routesForTerminatingGateway(cfgSnap)
 	case structs.ServiceKindMeshGateway:
 		return s.routesForMeshGateway(cfgSnap)
+	case structs.ServiceKindGateway:
+		return s.routesForGateway(cfgSnap)
 	default:
 		return nil, fmt.Errorf("Invalid service kind: %v", cfgSnap.Kind)
 	}
@@ -337,6 +339,10 @@ func makeNamedAddressesRoute(routeName string, addresses map[string]string) (*en
 		return route.VirtualHosts[i].Name > route.VirtualHosts[j].Name
 	})
 	return route, nil
+}
+
+func (s *ResourceGenerator) routesForGateway(cfgSnap *proxycfg.ConfigSnapshot) ([]proto.Message, error) {
+	return []proto.Message{}, nil
 }
 
 // routesForIngressGateway returns the xDS API representation of the

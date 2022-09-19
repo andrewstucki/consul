@@ -78,6 +78,7 @@ var supportedGateways = map[string]api.ServiceKind{
 	"mesh":        api.ServiceKindMeshGateway,
 	"terminating": api.ServiceKindTerminatingGateway,
 	"ingress":     api.ServiceKindIngressGateway,
+	"api":         api.ServiceKindGateway,
 }
 
 func (c *cmd) init() {
@@ -581,6 +582,7 @@ func (c *cmd) generateConfig() ([]byte, error) {
 		c.gatewayKind = svcList.Services[0].Kind
 	}
 	if svcProxyConfig == nil {
+		fmt.Println("nil")
 		return nil, errors.New("service is not a Connect proxy or gateway")
 	}
 

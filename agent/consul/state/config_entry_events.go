@@ -106,6 +106,18 @@ func (s *Store) IngressGatewaySnapshot(req stream.SubscribeRequest, buf stream.S
 	return s.configEntrySnapshot(structs.IngressGateway, req, buf)
 }
 
+// GatewaySnapshot is a stream.SnapshotFunc that returns a snapshot of
+// gateway config entries.
+func (s *Store) GatewaySnapshot(req stream.SubscribeRequest, buf stream.SnapshotAppender) (uint64, error) {
+	return s.configEntrySnapshot(structs.Gateway, req, buf)
+}
+
+// TCPRouteSnapshot is a stream.SnapshotFunc that returns a snapshot of
+// tcp-route config entries.
+func (s *Store) TCPRouteSnapshot(req stream.SubscribeRequest, buf stream.SnapshotAppender) (uint64, error) {
+	return s.configEntrySnapshot(structs.TCPRoute, req, buf)
+}
+
 // ServiceIntentionsSnapshot is a stream.SnapshotFunc that returns a snapshot of
 // service-intentions config entries.
 func (s *Store) ServiceIntentionsSnapshot(req stream.SubscribeRequest, buf stream.SnapshotAppender) (uint64, error) {

@@ -732,6 +732,10 @@ func (s *ConfigSnapshot) Valid() bool {
 			s.IngressGateway.GatewayConfigLoaded &&
 			s.IngressGateway.HostsSet &&
 			s.IngressGateway.MeshConfigSet
+
+	case structs.ServiceKindGateway:
+		return true
+		
 	default:
 		return false
 	}
@@ -845,6 +849,8 @@ func (s *ConfigSnapshot) ToConfigSnapshotUpstreams() (*ConfigSnapshotUpstreams, 
 		return &s.ConnectProxy.ConfigSnapshotUpstreams, nil
 	case structs.ServiceKindIngressGateway:
 		return &s.IngressGateway.ConfigSnapshotUpstreams, nil
+	case structs.ServiceKindGateway:
+		return &s.Gateway.ConfigSnapshotUpstreams, nil
 	default:
 		// This is a coherence check and should never fail
 		return nil, fmt.Errorf("No upstream snapshot for gateway mode %q", s.Kind)

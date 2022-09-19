@@ -37,6 +37,22 @@ func ConfigEntryToStructs(s *ConfigEntry) structs.ConfigEntry {
 		pbcommon.RaftIndexToStructs(s.RaftIndex, &target.RaftIndex)
 		pbcommon.EnterpriseMetaToStructs(s.EnterpriseMeta, &target.EnterpriseMeta)
 		return &target
+	case Kind_KindGateway:
+		var target structs.GatewayConfigEntry
+		target.Name = s.Name
+
+		GatewayToStructs(s.GetGateway(), &target)
+		pbcommon.RaftIndexToStructs(s.RaftIndex, &target.RaftIndex)
+		pbcommon.EnterpriseMetaToStructs(s.EnterpriseMeta, &target.EnterpriseMeta)
+		return &target
+	case Kind_KindTCPRoute:
+		var target structs.TCPRouteConfigEntry
+		target.Name = s.Name
+
+		TCPRouteToStructs(s.GetTCPRoute(), &target)
+		pbcommon.RaftIndexToStructs(s.RaftIndex, &target.RaftIndex)
+		pbcommon.EnterpriseMetaToStructs(s.EnterpriseMeta, &target.EnterpriseMeta)
+		return &target
 	case Kind_KindServiceIntentions:
 		var target structs.ServiceIntentionsConfigEntry
 		target.Name = s.Name
@@ -84,6 +100,22 @@ func ConfigEntryFromStructs(s structs.ConfigEntry) *ConfigEntry {
 		configEntry.Kind = Kind_KindIngressGateway
 		configEntry.Entry = &ConfigEntry_IngressGateway{
 			IngressGateway: &ingressGateway,
+		}
+	case *structs.GatewayConfigEntry:
+		var gateway Gateway
+		GatewayFromStructs(v, &gateway)
+
+		configEntry.Kind = Kind_KindGateway
+		configEntry.Entry = &ConfigEntry_Gateway{
+			Gateway: &gateway,
+		}
+	case *structs.TCPRouteConfigEntry:
+		var route TCPRoute
+		TCPRouteFromStructs(v, &route)
+
+		configEntry.Kind = Kind_KindTCPRoute
+		configEntry.Entry = &ConfigEntry_TCPRoute{
+			TCPRoute: &route,
 		}
 	case *structs.ServiceIntentionsConfigEntry:
 		var serviceIntentions ServiceIntentions

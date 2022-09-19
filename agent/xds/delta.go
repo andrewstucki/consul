@@ -317,6 +317,8 @@ func (s *Server) processDelta(stream ADSDeltaStream, reqCh <-chan *envoy_discove
 				generator.Logger = generator.Logger.Named(logging.MeshGateway)
 			case structs.ServiceKindIngressGateway:
 				generator.Logger = generator.Logger.Named(logging.IngressGateway)
+			case structs.ServiceKindGateway:
+				generator.Logger = generator.Logger.Named(logging.Gateway)
 			}
 
 			generator.Logger.Trace("Got initial config snapshot")
