@@ -6,22 +6,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hashicorp/consul/acl"
 	"github.com/hashicorp/consul/agent/consul/state"
 	"github.com/hashicorp/consul/agent/consul/stream"
 	"github.com/hashicorp/consul/agent/structs"
 	"golang.org/x/sync/errgroup"
 )
-
-// watch describes a type of config entry that the Controller
-// should watch.
-type watch struct {
-	// kind is the kind of config entry to subscribe to.
-	kind string
-	// enterpriseMeta is the enterprise metadata to pass along
-	// to the store watch.
-	enterpriseMeta *acl.EnterpriseMeta
-}
 
 // Controller subscribes to a set of watched resources from the
 // state store and delegates processing them to a given Reconciler.
