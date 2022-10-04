@@ -25,7 +25,10 @@ type Controller interface {
 	// The Start function should only ever be called once.
 	Start(ctx context.Context) error
 	// Subscribe tells the controller to subscribe to updates for config entries based
-	// on the given request. This should only ever be called prior to running Start.
+	// on the given request. Optional transformation functions can also be passed in
+	// to Subscribe, allowing a controller to map a config entry to a different type of
+	// request under the hood (i.e. watching a dependency and triggering a Reconcile on
+	// the dependent resource). This should only ever be called prior to running Start.
 	Subscribe(request *stream.SubscribeRequest, transformers ...func(entry structs.ConfigEntry) []Request) Controller
 	// WithBackoff changes the base and maximum backoff values for the Controller's
 	// Request retry rate limiter. This should only ever be called prior to
