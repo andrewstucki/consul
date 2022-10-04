@@ -6,6 +6,9 @@ import (
 	"time"
 )
 
+// much of this is a re-implementation of
+// https://github.com/kubernetes/client-go/blob/release-1.25/util/workqueue/queue.go
+
 // WorkQueue is an interface for a work queue with semantics to help with
 // retries and rate limiting.
 type WorkQueue interface {

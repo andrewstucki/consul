@@ -5,6 +5,9 @@ import (
 	"time"
 )
 
+// much of this is a re-implementation of:
+// https://github.com/kubernetes/client-go/blob/release-1.25/util/workqueue/default_rate_limiters.go
+
 // Limiter is an interface for a rate limiter that can limit
 // the number of retries processed in the work queue.
 type Limiter interface {

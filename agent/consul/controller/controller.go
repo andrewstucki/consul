@@ -12,6 +12,9 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// much of this is a re-implementation of
+// https://github.com/kubernetes-sigs/controller-runtime/blob/release-0.13/pkg/internal/controller/controller.go
+
 // Controller subscribes to a set of watched resources from the
 // state store and delegates processing them to a given Reconciler.
 // If a Reconciler errors while processing a Request, then the

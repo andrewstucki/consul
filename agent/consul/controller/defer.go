@@ -6,6 +6,9 @@ import (
 	"time"
 )
 
+// much of this is a re-implementation of
+// https://github.com/kubernetes/client-go/blob/release-1.25/util/workqueue/delaying_queue.go
+
 // DeferQueue is a generic priority queue implementation that
 // allows for deferring and later processing Requests.
 type DeferQueue interface {
