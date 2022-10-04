@@ -68,6 +68,50 @@ LOOP:
 	}
 }
 
+func TestBasicController_Transform(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	reconciler := newTestReconciler(false)
+
+	publisher := stream.NewEventPublisher(0)
+	go publisher.Run(ctx)
+
+	// get the store through the FSM since the publisher handlers get registered through it
+	store := fsm.NewFromDeps(fsm.Deps{
+		Logger: hclog.New(nil),
+		NewStateStore: func() *state.Store {
+			return state.NewStateStoreWithEventPublisher(nil, publisher)
+		},
+		Publisher: publisher,
+	}).State()
+
+	go New(publisher, reconciler).Subscribe(&stream.SubscribeRequest{
+		Topic:   state.EventTopicIngressGateway,
+		Subject: stream.SubjectWildcard,
+	}, func(entry structs.ConfigEntry) []Request {
+		return []Request{{
+			Kind: "foo",
+			Name: "bar",
+		}}
+	}).Start(ctx)
+
+	require.NoError(t, store.EnsureConfigEntry(1, &structs.IngressGatewayConfigEntry{
+		Kind: structs.IngressGateway,
+		Name: "test",
+	}))
+
+	select {
+	case request := <-reconciler.received:
+		require.Equal(t, "foo", request.Kind)
+		require.Equal(t, "bar", request.Name)
+	case <-ctx.Done():
+		t.Fatal("stopped reconciler before event received")
+	}
+}
+
 func TestBasicController_Retry(t *testing.T) {
 	t.Parallel()
 

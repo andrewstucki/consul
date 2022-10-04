@@ -26,7 +26,7 @@ type Controller interface {
 	Start(ctx context.Context) error
 	// Subscribe tells the controller to subscribe to updates for config entries based
 	// on the given request. This should only ever be called prior to running Start.
-	Subscribe(request *stream.SubscribeRequest) Controller
+	Subscribe(request *stream.SubscribeRequest, transformers ...func(entry structs.ConfigEntry) []Request) Controller
 	// WithBackoff changes the base and maximum backoff values for the Controller's
 	// Request retry rate limiter. This should only ever be called prior to
 	// running Start.
@@ -41,6 +41,11 @@ type Controller interface {
 }
 
 var _ Controller = &controller{}
+
+type subscription struct {
+	request      *stream.SubscribeRequest
+	transformers []func(entry structs.ConfigEntry) []Request
+}
 
 // controller implements the Controller interface
 type controller struct {
@@ -61,7 +66,7 @@ type controller struct {
 	maxBackoff time.Duration
 
 	// subscriptions is a list of subscription requests for retrieving configuration entries
-	subscriptions []*stream.SubscribeRequest
+	subscriptions []subscription
 	// publisher is the event publisher that should be subscribed to for any updates
 	publisher state.EventPublisher
 }
@@ -81,8 +86,11 @@ func New(publisher state.EventPublisher, reconciler Reconciler) Controller {
 // Subscribe tells the controller to subscribe to updates for config entries of the
 // given kind and with the associated enterprise metadata. This should only ever be
 // called prior to running Start.
-func (c *controller) Subscribe(request *stream.SubscribeRequest) Controller {
-	c.subscriptions = append(c.subscriptions, request)
+func (c *controller) Subscribe(request *stream.SubscribeRequest, transformers ...func(entry structs.ConfigEntry) []Request) Controller {
+	c.subscriptions = append(c.subscriptions, subscription{
+		request:      request,
+		transformers: transformers,
+	})
 	return c
 }
 
@@ -122,13 +130,13 @@ func (c *controller) Start(ctx context.Context) error {
 	// set up our queue
 	c.work = c.makeQueue(groupCtx, c.baseBackoff, c.maxBackoff)
 
-	for _, request := range c.subscriptions {
+	for _, sub := range c.subscriptions {
 		// store a reference for the closure
-		request := request
+		sub := sub
 		group.Go(func() error {
 			var index uint64
 
-			subscription, err := c.publisher.Subscribe(request)
+			subscription, err := c.publisher.Subscribe(sub.request)
 			if err != nil {
 				return err
 			}
@@ -158,7 +166,7 @@ func (c *controller) Start(ctx context.Context) error {
 					return errors.New("only config entries are supported for controllers")
 				}
 
-				c.enqueueEntries(entryEvent.Value)
+				c.enqueueEntry(sub.transformers, entryEvent.Value)
 			}
 		})
 	}
@@ -183,14 +191,20 @@ func (c *controller) Start(ctx context.Context) error {
 	return nil
 }
 
-// enqueueEntries adds all of the given entries into the work queue
-func (c *controller) enqueueEntries(entries ...structs.ConfigEntry) {
-	for _, entry := range entries {
+// enqueueEntry adds all of the given entry into the work queue
+func (c *controller) enqueueEntry(transformers []func(entry structs.ConfigEntry) []Request, entry structs.ConfigEntry) {
+	if len(transformers) == 0 {
 		c.work.Add(Request{
 			Kind: entry.GetKind(),
 			Name: entry.GetName(),
 			Meta: entry.GetEnterpriseMeta(),
 		})
+	} else {
+		for _, fn := range transformers {
+			for _, request := range fn(entry) {
+				c.work.Add(request)
+			}
+		}
 	}
 }
 
