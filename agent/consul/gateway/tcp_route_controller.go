@@ -4,7 +4,9 @@ import (
 	"context"
 
 	"github.com/hashicorp/consul/agent/consul/controller"
-	"github.com/hashicorp/consul/agent/structs"
+	"github.com/hashicorp/consul/agent/consul/fsm"
+	"github.com/hashicorp/consul/agent/consul/state"
+	"github.com/hashicorp/consul/agent/consul/stream"
 	"github.com/hashicorp/go-hclog"
 )
 
@@ -12,7 +14,7 @@ import (
 // handler for TCP routes
 type TCPRouteReconciler struct {
 	logger hclog.Logger
-	store  controller.Store
+	fsm    *fsm.FSM
 }
 
 // Reconcile reconciles TCPRoute config entries.
@@ -22,9 +24,12 @@ func (r *TCPRouteReconciler) Reconcile(ctx context.Context, req controller.Reque
 }
 
 // TCPRouteController creates a new Controller with a TCPRouteReconciler
-func TCPRouteController(store controller.Store, logger hclog.Logger) controller.Controller {
-	return controller.New(store, &TCPRouteReconciler{
-		store:  store,
+func TCPRouteController(fsm *fsm.FSM, publisher state.EventPublisher, logger hclog.Logger) controller.Controller {
+	return controller.New(publisher, &TCPRouteReconciler{
+		fsm:    fsm,
 		logger: logger,
-	}).Watch(structs.TCPRoute, nil)
+	}).Subscribe(&stream.SubscribeRequest{
+		Topic:   state.EventTopicTCPRoute,
+		Subject: stream.SubjectWildcard,
+	})
 }

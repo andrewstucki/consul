@@ -7,8 +7,9 @@ import (
 	"time"
 
 	"github.com/hashicorp/consul/acl"
+	"github.com/hashicorp/consul/agent/consul/state"
+	"github.com/hashicorp/consul/agent/consul/stream"
 	"github.com/hashicorp/consul/agent/structs"
-	"github.com/hashicorp/go-memdb"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -31,10 +32,9 @@ type Controller interface {
 	// context is canceled, the Controller stops processing any remaining work.
 	// The Start function should only ever be called once.
 	Start(ctx context.Context) error
-	// Watch tells the controller to subscribe to updates for config entries of the
-	// given kind and with the associated enterprise metadata. This should only ever be
-	// called prior to running Start.
-	Watch(kind string, entMeta *acl.EnterpriseMeta) Controller
+	// Subscribe tells the controller to subscribe to updates for config entries based
+	// on the given request. This should only ever be called prior to running Start.
+	Subscribe(request *stream.SubscribeRequest) Controller
 	// WithBackoff changes the base and maximum backoff values for the Controller's
 	// Request retry rate limiter. This should only ever be called prior to
 	// running Start.
@@ -68,17 +68,17 @@ type controller struct {
 	// maxBackoff is the maximum backoff time for the work queue's rate limiter
 	maxBackoff time.Duration
 
-	// watches is a list of Watch configurations for retrieving configuration entries
-	watches []watch
-	// store is the state store that should be watched for any updates
-	store Store
+	// subscriptions is a list of subscription requests for retrieving configuration entries
+	subscriptions []*stream.SubscribeRequest
+	// publisher is the event publisher that should be subscribed to for any updates
+	publisher state.EventPublisher
 }
 
 // New returns a new Controller associated with the given state store and reconciler.
-func New(store Store, reconciler Reconciler) Controller {
+func New(publisher state.EventPublisher, reconciler Reconciler) Controller {
 	return &controller{
 		reconciler:  reconciler,
-		store:       store,
+		publisher:   publisher,
 		workers:     1,
 		baseBackoff: 5 * time.Millisecond,
 		maxBackoff:  1000 * time.Second,
@@ -86,11 +86,11 @@ func New(store Store, reconciler Reconciler) Controller {
 	}
 }
 
-// Watch tells the controller to subscribe to updates for config entries of the
+// Subscribe tells the controller to subscribe to updates for config entries of the
 // given kind and with the associated enterprise metadata. This should only ever be
 // called prior to running Start.
-func (c *controller) Watch(kind string, entMeta *acl.EnterpriseMeta) Controller {
-	c.watches = append(c.watches, watch{kind, entMeta})
+func (c *controller) Subscribe(request *stream.SubscribeRequest) Controller {
+	c.subscriptions = append(c.subscriptions, request)
 	return c
 }
 
@@ -130,41 +130,43 @@ func (c *controller) Start(ctx context.Context) error {
 	// set up our queue
 	c.work = c.makeQueue(groupCtx, c.baseBackoff, c.maxBackoff)
 
-	for _, watch := range c.watches {
+	for _, request := range c.subscriptions {
 		// store a reference for the closure
-		watch := watch
+		request := request
 		group.Go(func() error {
-			var previousIndex uint64
-			var fetched bool
-			for {
-				ws := memdb.NewWatchSet()
-				ws.Add(c.store.AbandonCh())
+			var index uint64
 
-				index, entries, err := c.store.ConfigEntriesByKind(ws, watch.kind, watch.enterpriseMeta)
-				if err != nil {
+			subscription, err := c.publisher.Subscribe(request)
+			if err != nil {
+				return err
+			}
+			defer subscription.Unsubscribe()
+
+			for {
+				event, err := subscription.Next(ctx)
+				switch {
+				case errors.Is(err, context.Canceled):
+					return nil
+				case err != nil:
 					return err
 				}
-				if !fetched {
-					// since we haven't enqueued anything at this point, we'll want to enqueue
-					// all entries we've received without filtering
-					c.enqueueEntries(entries)
-					fetched = true
-				} else {
-					c.enqueueEntries(entriesAfter(previousIndex, entries))
-				}
-				previousIndex = index
 
-				if err := ws.WatchCtx(groupCtx); err != nil {
-					// exit if we've reached a timeout, or other cancellation
-					return nil
+				if event.IsFramingEvent() {
+					continue
 				}
 
-				// exit if the state store has been abandoned
-				select {
-				case <-c.store.AbandonCh():
-					return nil
-				default:
+				if event.Index <= index {
+					continue
 				}
+
+				index = event.Index
+
+				entryEvent, ok := event.Payload.(state.EventPayloadConfigEntry)
+				if !ok {
+					return errors.New("only config entries are supported for controllers")
+				}
+
+				c.enqueueEntries(entryEvent.Value)
 			}
 		})
 	}
@@ -190,7 +192,7 @@ func (c *controller) Start(ctx context.Context) error {
 }
 
 // enqueueEntries adds all of the given entries into the work queue
-func (c *controller) enqueueEntries(entries []structs.ConfigEntry) {
+func (c *controller) enqueueEntries(entries ...structs.ConfigEntry) {
 	for _, entry := range entries {
 		c.work.Add(Request{
 			Kind: entry.GetKind(),
@@ -230,17 +232,4 @@ func (c *controller) reconcileHandler(ctx context.Context, req Request) {
 
 	// if no error then Forget this request so it is not retried
 	c.work.Forget(req)
-}
-
-// entriesAfter filters out any config entries that haven't been modified since the
-// given index
-func entriesAfter(index uint64, entries []structs.ConfigEntry) []structs.ConfigEntry {
-	filtered := []structs.ConfigEntry{}
-	for _, entry := range entries {
-		raftIndex := entry.GetRaftIndex()
-		if raftIndex.ModifyIndex > index {
-			filtered = append(filtered, entry)
-		}
-	}
-	return filtered
 }

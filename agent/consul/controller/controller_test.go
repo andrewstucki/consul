@@ -7,9 +7,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/consul/agent/consul/fsm"
 	"github.com/hashicorp/consul/agent/consul/state"
 	"github.com/hashicorp/consul/agent/consul/stream"
 	"github.com/hashicorp/consul/agent/structs"
+	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,16 +21,30 @@ func TestBasicController(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	store := state.NewStateStoreWithEventPublisher(nil, stream.NoOpEventPublisher{})
-
 	reconciler := newTestReconciler(false)
-	go New(store, reconciler).Watch(structs.ServiceDefaults, nil).Start(ctx)
+
+	publisher := stream.NewEventPublisher(0)
+	go publisher.Run(ctx)
+
+	// get the store through the FSM since the publisher handlers get registered through it
+	store := fsm.NewFromDeps(fsm.Deps{
+		Logger: hclog.New(nil),
+		NewStateStore: func() *state.Store {
+			return state.NewStateStoreWithEventPublisher(nil, publisher)
+		},
+		Publisher: publisher,
+	}).State()
+
+	go New(publisher, reconciler).Subscribe(&stream.SubscribeRequest{
+		Topic:   state.EventTopicIngressGateway,
+		Subject: stream.SubjectWildcard,
+	}).Start(ctx)
 
 	for i := 0; i < 200; i++ {
 		entryIndex := uint64(i + 1)
 		name := fmt.Sprintf("foo-%d", i)
-		require.NoError(t, store.EnsureConfigEntry(entryIndex, &structs.ServiceConfigEntry{
-			Kind: structs.ServiceDefaults,
+		require.NoError(t, store.EnsureConfigEntry(entryIndex, &structs.IngressGatewayConfigEntry{
+			Kind: structs.IngressGateway,
 			Name: name,
 		}))
 	}
@@ -38,7 +54,7 @@ LOOP:
 	for {
 		select {
 		case request := <-reconciler.received:
-			require.Equal(t, structs.ServiceDefaults, request.Kind)
+			require.Equal(t, structs.IngressGateway, request.Kind)
 			received = append(received, request.Name)
 		case <-ctx.Done():
 			break LOOP
@@ -58,13 +74,26 @@ func TestBasicController_Retry(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	store := state.NewStateStoreWithEventPublisher(nil, stream.NoOpEventPublisher{})
-
 	reconciler := newTestReconciler(true)
 	defer reconciler.stop()
 
+	publisher := stream.NewEventPublisher(0)
+	go publisher.Run(ctx)
+
+	// get the store through the FSM since the publisher handlers get registered through it
+	store := fsm.NewFromDeps(fsm.Deps{
+		Logger: hclog.New(nil),
+		NewStateStore: func() *state.Store {
+			return state.NewStateStoreWithEventPublisher(nil, publisher)
+		},
+		Publisher: publisher,
+	}).State()
+
 	queueInitialized := make(chan *countingWorkQueue)
-	controller := New(store, reconciler).Watch(structs.ServiceDefaults, nil).WithBackoff(1*time.Millisecond, 1*time.Millisecond)
+	controller := New(publisher, reconciler).Subscribe(&stream.SubscribeRequest{
+		Topic:   state.EventTopicIngressGateway,
+		Subject: stream.SubjectWildcard,
+	}).WithBackoff(1*time.Millisecond, 1*time.Millisecond)
 	go controller.WithQueueFactory(func(ctx context.Context, baseBackoff, maxBackoff time.Duration) WorkQueue {
 		queue := newCountingWorkQueue(RunWorkQueue(ctx, baseBackoff, maxBackoff))
 		queueInitialized <- queue
@@ -78,7 +107,7 @@ func TestBasicController_Retry(t *testing.T) {
 		defer time.Sleep(10 * time.Millisecond)
 		select {
 		case req := <-request:
-			require.Equal(t, structs.ServiceDefaults, req.Kind)
+			require.Equal(t, structs.IngressGateway, req.Kind)
 			require.Equal(t, name, req.Name)
 			return true
 		case <-time.After(10 * time.Millisecond):
@@ -88,8 +117,8 @@ func TestBasicController_Retry(t *testing.T) {
 
 	// check to make sure we are called once
 	queue.reset()
-	require.NoError(t, store.EnsureConfigEntry(1, &structs.ServiceConfigEntry{
-		Kind: structs.ServiceDefaults,
+	require.NoError(t, store.EnsureConfigEntry(1, &structs.IngressGatewayConfigEntry{
+		Kind: structs.IngressGateway,
 		Name: "foo-1",
 	}))
 	require.False(t, ensureCalled(reconciler.received, "foo-1"))
@@ -103,8 +132,8 @@ func TestBasicController_Retry(t *testing.T) {
 	// check that we requeue when an arbitrary error occurs
 	queue.reset()
 	reconciler.setResponse(errors.New("error"))
-	require.NoError(t, store.EnsureConfigEntry(2, &structs.ServiceConfigEntry{
-		Kind: structs.ServiceDefaults,
+	require.NoError(t, store.EnsureConfigEntry(2, &structs.IngressGatewayConfigEntry{
+		Kind: structs.IngressGateway,
 		Name: "foo-2",
 	}))
 	require.False(t, ensureCalled(reconciler.received, "foo-2"))
@@ -128,8 +157,8 @@ func TestBasicController_Retry(t *testing.T) {
 	// check that we requeue at a given rate when using a RequeueAfterError
 	queue.reset()
 	reconciler.setResponse(RequeueNow())
-	require.NoError(t, store.EnsureConfigEntry(3, &structs.ServiceConfigEntry{
-		Kind: structs.ServiceDefaults,
+	require.NoError(t, store.EnsureConfigEntry(3, &structs.IngressGatewayConfigEntry{
+		Kind: structs.IngressGateway,
 		Name: "foo-3",
 	}))
 	require.False(t, ensureCalled(reconciler.received, "foo-3"))
@@ -149,5 +178,4 @@ func TestBasicController_Retry(t *testing.T) {
 	require.EqualValues(t, 2, queue.dones())
 	require.EqualValues(t, 1, queue.requeues())
 	require.EqualValues(t, 1, queue.addAfters())
-
 }

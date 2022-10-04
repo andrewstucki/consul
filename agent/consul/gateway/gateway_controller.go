@@ -4,7 +4,9 @@ import (
 	"context"
 
 	"github.com/hashicorp/consul/agent/consul/controller"
-	"github.com/hashicorp/consul/agent/structs"
+	"github.com/hashicorp/consul/agent/consul/fsm"
+	"github.com/hashicorp/consul/agent/consul/state"
+	"github.com/hashicorp/consul/agent/consul/stream"
 	"github.com/hashicorp/go-hclog"
 )
 
@@ -12,7 +14,7 @@ import (
 // handler for API Gateway
 type GatewayReconciler struct {
 	logger hclog.Logger
-	store  controller.Store
+	fsm    *fsm.FSM
 }
 
 // Reconcile reconciles Gateway config entries.
@@ -22,9 +24,12 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req controller.Reques
 }
 
 // GatewayController creates a new Controller with a GatewayReconciler
-func GatewayController(store controller.Store, logger hclog.Logger) controller.Controller {
-	return controller.New(store, &GatewayReconciler{
-		store:  store,
+func GatewayController(fsm *fsm.FSM, publisher state.EventPublisher, logger hclog.Logger) controller.Controller {
+	return controller.New(publisher, &GatewayReconciler{
+		fsm:    fsm,
 		logger: logger,
-	}).Watch(structs.Gateway, nil)
+	}).Subscribe(&stream.SubscribeRequest{
+		Topic:   state.EventTopicGateway,
+		Subject: stream.SubjectWildcard,
+	})
 }
