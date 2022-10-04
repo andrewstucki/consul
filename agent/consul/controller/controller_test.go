@@ -38,7 +38,7 @@ func TestBasicController(t *testing.T) {
 	go New(publisher, reconciler).Subscribe(&stream.SubscribeRequest{
 		Topic:   state.EventTopicIngressGateway,
 		Subject: stream.SubjectWildcard,
-	}).Start(ctx)
+	}).WithWorkers(10).Start(ctx)
 
 	for i := 0; i < 200; i++ {
 		entryIndex := uint64(i + 1)
@@ -93,7 +93,7 @@ func TestBasicController_Retry(t *testing.T) {
 	controller := New(publisher, reconciler).Subscribe(&stream.SubscribeRequest{
 		Topic:   state.EventTopicIngressGateway,
 		Subject: stream.SubjectWildcard,
-	}).WithBackoff(1*time.Millisecond, 1*time.Millisecond)
+	}).WithWorkers(-1).WithBackoff(1*time.Millisecond, 1*time.Millisecond)
 	go controller.WithQueueFactory(func(ctx context.Context, baseBackoff, maxBackoff time.Duration) WorkQueue {
 		queue := newCountingWorkQueue(RunWorkQueue(ctx, baseBackoff, maxBackoff))
 		queueInitialized <- queue
