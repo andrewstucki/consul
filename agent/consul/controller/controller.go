@@ -40,6 +40,9 @@ type Controller interface {
 	// WithWorkers sets the number of worker goroutines used to process the queue
 	// this defaults to 1 goroutine.
 	WithWorkers(i int) Controller
+	// WithLogger sets the logger for the controller, it should be called prior to Start
+	// being invoked.
+	WithLogger(logger hclog.Logger) Controller
 	// WithQueueFactory allows a Controller to replace its underlying work queue
 	// implementation. This is most useful for testing. This should only ever be called
 	// prior to running Start.
@@ -144,6 +147,11 @@ func (c *controller) WithWorkers(i int) Controller {
 		i = 1
 	}
 	c.workers = i
+	return c
+}
+
+func (c *controller) WithLogger(logger hclog.Logger) Controller {
+	c.logger = logger
 	return c
 }
 
