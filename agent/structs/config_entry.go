@@ -40,6 +40,9 @@ const (
 	DefaultServiceProtocol = "tcp"
 
 	ConnectionExactBalance = "exact_balance"
+
+	Gateway  string = "gateway"
+	TCPRoute string = "tcp-route"
 )
 
 var AllConfigEntryKinds = []string{
@@ -631,6 +634,10 @@ func MakeConfigEntry(kind, name string) (ConfigEntry, error) {
 		return &MeshConfigEntry{}, nil
 	case ExportedServices:
 		return &ExportedServicesConfigEntry{Name: name}, nil
+	case Gateway:
+		return &GatewayConfigEntry{Name: name}, nil
+	case TCPRoute:
+		return &TCPRouteConfigEntry{Name: name}, nil
 	default:
 		return nil, fmt.Errorf("invalid config entry kind: %s", kind)
 	}

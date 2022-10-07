@@ -70,6 +70,11 @@ enum Topic {
   //
   // Note: WildcardSubject is the only supported Subject on this topic.
   ServiceList = 7;
+
+  // Gateway topic contains events for changes to a gateway.
+  Gateway = 8;
+  // TCPRoute topic contains events for changes to a tcp route.
+  TCPRoute = 9;
 }
 
 message NamedSubject {

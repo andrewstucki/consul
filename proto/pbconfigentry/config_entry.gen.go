@@ -20,6 +20,32 @@ func CookieConfigFromStructs(t *structs.CookieConfig, s *CookieConfig) {
 	s.TTL = structs.DurationToProto(t.TTL)
 	s.Path = t.Path
 }
+func GatewayToStructs(s *Gateway, t *structs.GatewayConfigEntry) {
+	if s == nil {
+		return
+	}
+	t.Meta = s.Meta
+}
+func GatewayFromStructs(t *structs.GatewayConfigEntry, s *Gateway) {
+	if s == nil {
+		return
+	}
+	s.Meta = t.Meta
+}
+func GatewayReferenceToStructs(s *GatewayReference, t *structs.GatewayReference) {
+	if s == nil {
+		return
+	}
+	t.Name = s.Name
+	t.EnterpriseMeta = enterpriseMetaToStructs(s.EnterpriseMeta)
+}
+func GatewayReferenceFromStructs(t *structs.GatewayReference, s *GatewayReference) {
+	if s == nil {
+		return
+	}
+	s.Name = t.Name
+	s.EnterpriseMeta = enterpriseMetaFromStructs(t.EnterpriseMeta)
+}
 func GatewayServiceTLSConfigToStructs(s *GatewayServiceTLSConfig, t *structs.GatewayServiceTLSConfig) {
 	if s == nil {
 		return
@@ -821,6 +847,70 @@ func SourceIntentionFromStructs(t *structs.SourceIntention, s *SourceIntention) 
 	s.LegacyUpdateTime = timeFromStructs(t.LegacyUpdateTime)
 	s.EnterpriseMeta = enterpriseMetaFromStructs(t.EnterpriseMeta)
 	s.Peer = t.Peer
+}
+func TCPRouteToStructs(s *TCPRoute, t *structs.TCPRouteConfigEntry) {
+	if s == nil {
+		return
+	}
+	{
+		t.Gateways = make([]structs.GatewayReference, len(s.Gateways))
+		for i := range s.Gateways {
+			if s.Gateways[i] != nil {
+				GatewayReferenceToStructs(s.Gateways[i], &t.Gateways[i])
+			}
+		}
+	}
+	t.Meta = s.Meta
+	{
+		t.Services = make([]structs.TCPService, len(s.Services))
+		for i := range s.Services {
+			if s.Services[i] != nil {
+				TCPServiceToStructs(s.Services[i], &t.Services[i])
+			}
+		}
+	}
+}
+func TCPRouteFromStructs(t *structs.TCPRouteConfigEntry, s *TCPRoute) {
+	if s == nil {
+		return
+	}
+	{
+		s.Gateways = make([]*GatewayReference, len(t.Gateways))
+		for i := range t.Gateways {
+			{
+				var x GatewayReference
+				GatewayReferenceFromStructs(&t.Gateways[i], &x)
+				s.Gateways[i] = &x
+			}
+		}
+	}
+	s.Meta = t.Meta
+	{
+		s.Services = make([]*TCPService, len(t.Services))
+		for i := range t.Services {
+			{
+				var x TCPService
+				TCPServiceFromStructs(&t.Services[i], &x)
+				s.Services[i] = &x
+			}
+		}
+	}
+}
+func TCPServiceToStructs(s *TCPService, t *structs.TCPService) {
+	if s == nil {
+		return
+	}
+	t.Name = s.Name
+	t.Weight = int(s.Weight)
+	t.EnterpriseMeta = enterpriseMetaToStructs(s.EnterpriseMeta)
+}
+func TCPServiceFromStructs(t *structs.TCPService, s *TCPService) {
+	if s == nil {
+		return
+	}
+	s.Name = t.Name
+	s.Weight = int32(t.Weight)
+	s.EnterpriseMeta = enterpriseMetaFromStructs(t.EnterpriseMeta)
 }
 func TransparentProxyMeshConfigToStructs(s *TransparentProxyMeshConfig, t *structs.TransparentProxyMeshConfig) {
 	if s == nil {

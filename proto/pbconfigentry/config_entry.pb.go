@@ -31,6 +31,8 @@ const (
 	Kind_KindServiceResolver   Kind = 2
 	Kind_KindIngressGateway    Kind = 3
 	Kind_KindServiceIntentions Kind = 4
+	Kind_KindGateway           Kind = 5
+	Kind_KindTCPRoute          Kind = 6
 )
 
 // Enum value maps for Kind.
@@ -41,6 +43,8 @@ var (
 		2: "KindServiceResolver",
 		3: "KindIngressGateway",
 		4: "KindServiceIntentions",
+		5: "KindGateway",
+		6: "KindTCPRoute",
 	}
 	Kind_value = map[string]int32{
 		"KindUnknown":           0,
@@ -48,6 +52,8 @@ var (
 		"KindServiceResolver":   2,
 		"KindIngressGateway":    3,
 		"KindServiceIntentions": 4,
+		"KindGateway":           5,
+		"KindTCPRoute":          6,
 	}
 )
 
@@ -177,6 +183,7 @@ type ConfigEntry struct {
 	EnterpriseMeta *pbcommon.EnterpriseMeta `protobuf:"bytes,3,opt,name=EnterpriseMeta,proto3" json:"EnterpriseMeta,omitempty"`
 	RaftIndex      *pbcommon.RaftIndex      `protobuf:"bytes,4,opt,name=RaftIndex,proto3" json:"RaftIndex,omitempty"`
 	// Types that are assignable to Entry:
+	//
 	//	*ConfigEntry_MeshConfig
 	//	*ConfigEntry_ServiceResolver
 	//	*ConfigEntry_IngressGateway
@@ -2516,6 +2523,275 @@ func (x *IntentionHTTPHeaderPermission) GetInvert() bool {
 	return false
 }
 
+// mog annotation:
+//
+// target=github.com/hashicorp/consul/agent/structs.GatewayConfigEntry
+// output=config_entry.gen.go
+// name=Structs
+// ignore-fields=Kind,Name,RaftIndex,EnterpriseMeta
+type Gateway struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Name string            `protobuf:"bytes,1,opt,name=Name,proto3" json:"Name,omitempty"`
+	Meta map[string]string `protobuf:"bytes,2,rep,name=Meta,proto3" json:"Meta,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+
+func (x *Gateway) Reset() {
+	*x = Gateway{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_proto_pbconfigentry_config_entry_proto_msgTypes[30]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Gateway) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Gateway) ProtoMessage() {}
+
+func (x *Gateway) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_pbconfigentry_config_entry_proto_msgTypes[30]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Gateway.ProtoReflect.Descriptor instead.
+func (*Gateway) Descriptor() ([]byte, []int) {
+	return file_proto_pbconfigentry_config_entry_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *Gateway) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Gateway) GetMeta() map[string]string {
+	if x != nil {
+		return x.Meta
+	}
+	return nil
+}
+
+// mog annotation:
+//
+// target=github.com/hashicorp/consul/agent/structs.TCPRouteConfigEntry
+// output=config_entry.gen.go
+// name=Structs
+// ignore-fields=Kind,Name,RaftIndex,EnterpriseMeta
+type TCPRoute struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Name     string              `protobuf:"bytes,1,opt,name=Name,proto3" json:"Name,omitempty"`
+	Gateways []*GatewayReference `protobuf:"bytes,2,rep,name=Gateways,proto3" json:"Gateways,omitempty"`
+	Services []*TCPService       `protobuf:"bytes,3,rep,name=Services,proto3" json:"Services,omitempty"`
+	Meta     map[string]string   `protobuf:"bytes,4,rep,name=Meta,proto3" json:"Meta,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+
+func (x *TCPRoute) Reset() {
+	*x = TCPRoute{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_proto_pbconfigentry_config_entry_proto_msgTypes[31]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TCPRoute) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TCPRoute) ProtoMessage() {}
+
+func (x *TCPRoute) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_pbconfigentry_config_entry_proto_msgTypes[31]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TCPRoute.ProtoReflect.Descriptor instead.
+func (*TCPRoute) Descriptor() ([]byte, []int) {
+	return file_proto_pbconfigentry_config_entry_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *TCPRoute) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *TCPRoute) GetGateways() []*GatewayReference {
+	if x != nil {
+		return x.Gateways
+	}
+	return nil
+}
+
+func (x *TCPRoute) GetServices() []*TCPService {
+	if x != nil {
+		return x.Services
+	}
+	return nil
+}
+
+func (x *TCPRoute) GetMeta() map[string]string {
+	if x != nil {
+		return x.Meta
+	}
+	return nil
+}
+
+// mog annotation:
+//
+// target=github.com/hashicorp/consul/agent/structs.GatewayReference
+// output=config_entry.gen.go
+// name=Structs
+type GatewayReference struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Name string `protobuf:"bytes,1,opt,name=Name,proto3" json:"Name,omitempty"`
+	// mog: func-to=enterpriseMetaToStructs func-from=enterpriseMetaFromStructs
+	EnterpriseMeta *pbcommon.EnterpriseMeta `protobuf:"bytes,2,opt,name=EnterpriseMeta,proto3" json:"EnterpriseMeta,omitempty"`
+}
+
+func (x *GatewayReference) Reset() {
+	*x = GatewayReference{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_proto_pbconfigentry_config_entry_proto_msgTypes[32]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GatewayReference) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GatewayReference) ProtoMessage() {}
+
+func (x *GatewayReference) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_pbconfigentry_config_entry_proto_msgTypes[32]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GatewayReference.ProtoReflect.Descriptor instead.
+func (*GatewayReference) Descriptor() ([]byte, []int) {
+	return file_proto_pbconfigentry_config_entry_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *GatewayReference) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *GatewayReference) GetEnterpriseMeta() *pbcommon.EnterpriseMeta {
+	if x != nil {
+		return x.EnterpriseMeta
+	}
+	return nil
+}
+
+// mog annotation:
+//
+// target=github.com/hashicorp/consul/agent/structs.TCPService
+// output=config_entry.gen.go
+// name=Structs
+type TCPService struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Name string `protobuf:"bytes,1,opt,name=Name,proto3" json:"Name,omitempty"`
+	// mog: func-to=int func-from=int32
+	Weight int32 `protobuf:"varint,2,opt,name=Weight,proto3" json:"Weight,omitempty"`
+	// mog: func-to=enterpriseMetaToStructs func-from=enterpriseMetaFromStructs
+	EnterpriseMeta *pbcommon.EnterpriseMeta `protobuf:"bytes,3,opt,name=EnterpriseMeta,proto3" json:"EnterpriseMeta,omitempty"`
+}
+
+func (x *TCPService) Reset() {
+	*x = TCPService{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_proto_pbconfigentry_config_entry_proto_msgTypes[33]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TCPService) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TCPService) ProtoMessage() {}
+
+func (x *TCPService) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_pbconfigentry_config_entry_proto_msgTypes[33]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TCPService.ProtoReflect.Descriptor instead.
+func (*TCPService) Descriptor() ([]byte, []int) {
+	return file_proto_pbconfigentry_config_entry_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *TCPService) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *TCPService) GetWeight() int32 {
+	if x != nil {
+		return x.Weight
+	}
+	return 0
+}
+
+func (x *TCPService) GetEnterpriseMeta() *pbcommon.EnterpriseMeta {
+	if x != nil {
+		return x.EnterpriseMeta
+	}
+	return nil
+}
+
 var File_proto_pbconfigentry_config_entry_proto protoreflect.FileDescriptor
 
 var file_proto_pbconfigentry_config_entry_proto_rawDesc = []byte{
@@ -3040,15 +3316,66 @@ var file_proto_pbconfigentry_config_entry_proto_rawDesc = []byte{
 	0x28, 0x09, 0x52, 0x06, 0x53, 0x75, 0x66, 0x66, 0x69, 0x78, 0x12, 0x14, 0x0a, 0x05, 0x52, 0x65,
 	0x67, 0x65, 0x78, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x52, 0x65, 0x67, 0x65, 0x78,
 	0x12, 0x16, 0x0a, 0x06, 0x49, 0x6e, 0x76, 0x65, 0x72, 0x74, 0x18, 0x07, 0x20, 0x01, 0x28, 0x08,
-	0x52, 0x06, 0x49, 0x6e, 0x76, 0x65, 0x72, 0x74, 0x2a, 0x77, 0x0a, 0x04, 0x4b, 0x69, 0x6e, 0x64,
-	0x12, 0x0f, 0x0a, 0x0b, 0x4b, 0x69, 0x6e, 0x64, 0x55, 0x6e, 0x6b, 0x6e, 0x6f, 0x77, 0x6e, 0x10,
-	0x00, 0x12, 0x12, 0x0a, 0x0e, 0x4b, 0x69, 0x6e, 0x64, 0x4d, 0x65, 0x73, 0x68, 0x43, 0x6f, 0x6e,
-	0x66, 0x69, 0x67, 0x10, 0x01, 0x12, 0x17, 0x0a, 0x13, 0x4b, 0x69, 0x6e, 0x64, 0x53, 0x65, 0x72,
-	0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65, 0x72, 0x10, 0x02, 0x12, 0x16,
-	0x0a, 0x12, 0x4b, 0x69, 0x6e, 0x64, 0x49, 0x6e, 0x67, 0x72, 0x65, 0x73, 0x73, 0x47, 0x61, 0x74,
-	0x65, 0x77, 0x61, 0x79, 0x10, 0x03, 0x12, 0x19, 0x0a, 0x15, 0x4b, 0x69, 0x6e, 0x64, 0x53, 0x65,
-	0x72, 0x76, 0x69, 0x63, 0x65, 0x49, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x10,
-	0x04, 0x2a, 0x26, 0x0a, 0x0f, 0x49, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x69, 0x6f, 0x6e, 0x41, 0x63,
+	0x52, 0x06, 0x49, 0x6e, 0x76, 0x65, 0x72, 0x74, 0x22, 0xa4, 0x01, 0x0a, 0x07, 0x47, 0x61, 0x74,
+	0x65, 0x77, 0x61, 0x79, 0x12, 0x12, 0x0a, 0x04, 0x4e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x04, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x4c, 0x0a, 0x04, 0x4d, 0x65, 0x74, 0x61,
+	0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x38, 0x2e, 0x68, 0x61, 0x73, 0x68, 0x69, 0x63, 0x6f,
+	0x72, 0x70, 0x2e, 0x63, 0x6f, 0x6e, 0x73, 0x75, 0x6c, 0x2e, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e,
+	0x61, 0x6c, 0x2e, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x65, 0x6e, 0x74, 0x72, 0x79, 0x2e, 0x47,
+	0x61, 0x74, 0x65, 0x77, 0x61, 0x79, 0x2e, 0x4d, 0x65, 0x74, 0x61, 0x45, 0x6e, 0x74, 0x72, 0x79,
+	0x52, 0x04, 0x4d, 0x65, 0x74, 0x61, 0x1a, 0x37, 0x0a, 0x09, 0x4d, 0x65, 0x74, 0x61, 0x45, 0x6e,
+	0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22,
+	0xca, 0x02, 0x0a, 0x08, 0x54, 0x43, 0x50, 0x52, 0x6f, 0x75, 0x74, 0x65, 0x12, 0x12, 0x0a, 0x04,
+	0x4e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x4e, 0x61, 0x6d, 0x65,
+	0x12, 0x53, 0x0a, 0x08, 0x47, 0x61, 0x74, 0x65, 0x77, 0x61, 0x79, 0x73, 0x18, 0x02, 0x20, 0x03,
+	0x28, 0x0b, 0x32, 0x37, 0x2e, 0x68, 0x61, 0x73, 0x68, 0x69, 0x63, 0x6f, 0x72, 0x70, 0x2e, 0x63,
+	0x6f, 0x6e, 0x73, 0x75, 0x6c, 0x2e, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2e, 0x63,
+	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x65, 0x6e, 0x74, 0x72, 0x79, 0x2e, 0x47, 0x61, 0x74, 0x65, 0x77,
+	0x61, 0x79, 0x52, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x52, 0x08, 0x47, 0x61, 0x74,
+	0x65, 0x77, 0x61, 0x79, 0x73, 0x12, 0x4d, 0x0a, 0x08, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65,
+	0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x31, 0x2e, 0x68, 0x61, 0x73, 0x68, 0x69, 0x63,
+	0x6f, 0x72, 0x70, 0x2e, 0x63, 0x6f, 0x6e, 0x73, 0x75, 0x6c, 0x2e, 0x69, 0x6e, 0x74, 0x65, 0x72,
+	0x6e, 0x61, 0x6c, 0x2e, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x65, 0x6e, 0x74, 0x72, 0x79, 0x2e,
+	0x54, 0x43, 0x50, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x08, 0x53, 0x65, 0x72, 0x76,
+	0x69, 0x63, 0x65, 0x73, 0x12, 0x4d, 0x0a, 0x04, 0x4d, 0x65, 0x74, 0x61, 0x18, 0x04, 0x20, 0x03,
+	0x28, 0x0b, 0x32, 0x39, 0x2e, 0x68, 0x61, 0x73, 0x68, 0x69, 0x63, 0x6f, 0x72, 0x70, 0x2e, 0x63,
+	0x6f, 0x6e, 0x73, 0x75, 0x6c, 0x2e, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2e, 0x63,
+	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x65, 0x6e, 0x74, 0x72, 0x79, 0x2e, 0x54, 0x43, 0x50, 0x52, 0x6f,
+	0x75, 0x74, 0x65, 0x2e, 0x4d, 0x65, 0x74, 0x61, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x04, 0x4d,
+	0x65, 0x74, 0x61, 0x1a, 0x37, 0x0a, 0x09, 0x4d, 0x65, 0x74, 0x61, 0x45, 0x6e, 0x74, 0x72, 0x79,
+	0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b,
+	0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x80, 0x01, 0x0a,
+	0x10, 0x47, 0x61, 0x74, 0x65, 0x77, 0x61, 0x79, 0x52, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63,
+	0x65, 0x12, 0x12, 0x0a, 0x04, 0x4e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x04, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x58, 0x0a, 0x0e, 0x45, 0x6e, 0x74, 0x65, 0x72, 0x70, 0x72,
+	0x69, 0x73, 0x65, 0x4d, 0x65, 0x74, 0x61, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x30, 0x2e,
+	0x68, 0x61, 0x73, 0x68, 0x69, 0x63, 0x6f, 0x72, 0x70, 0x2e, 0x63, 0x6f, 0x6e, 0x73, 0x75, 0x6c,
+	0x2e, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2e, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e,
+	0x2e, 0x45, 0x6e, 0x74, 0x65, 0x72, 0x70, 0x72, 0x69, 0x73, 0x65, 0x4d, 0x65, 0x74, 0x61, 0x52,
+	0x0e, 0x45, 0x6e, 0x74, 0x65, 0x72, 0x70, 0x72, 0x69, 0x73, 0x65, 0x4d, 0x65, 0x74, 0x61, 0x22,
+	0x92, 0x01, 0x0a, 0x0a, 0x54, 0x43, 0x50, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x12,
+	0x0a, 0x04, 0x4e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x4e, 0x61,
+	0x6d, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x57, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x05, 0x52, 0x06, 0x57, 0x65, 0x69, 0x67, 0x68, 0x74, 0x12, 0x58, 0x0a, 0x0e, 0x45, 0x6e,
+	0x74, 0x65, 0x72, 0x70, 0x72, 0x69, 0x73, 0x65, 0x4d, 0x65, 0x74, 0x61, 0x18, 0x03, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x30, 0x2e, 0x68, 0x61, 0x73, 0x68, 0x69, 0x63, 0x6f, 0x72, 0x70, 0x2e, 0x63,
+	0x6f, 0x6e, 0x73, 0x75, 0x6c, 0x2e, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2e, 0x63,
+	0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2e, 0x45, 0x6e, 0x74, 0x65, 0x72, 0x70, 0x72, 0x69, 0x73, 0x65,
+	0x4d, 0x65, 0x74, 0x61, 0x52, 0x0e, 0x45, 0x6e, 0x74, 0x65, 0x72, 0x70, 0x72, 0x69, 0x73, 0x65,
+	0x4d, 0x65, 0x74, 0x61, 0x2a, 0x9a, 0x01, 0x0a, 0x04, 0x4b, 0x69, 0x6e, 0x64, 0x12, 0x0f, 0x0a,
+	0x0b, 0x4b, 0x69, 0x6e, 0x64, 0x55, 0x6e, 0x6b, 0x6e, 0x6f, 0x77, 0x6e, 0x10, 0x00, 0x12, 0x12,
+	0x0a, 0x0e, 0x4b, 0x69, 0x6e, 0x64, 0x4d, 0x65, 0x73, 0x68, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67,
+	0x10, 0x01, 0x12, 0x17, 0x0a, 0x13, 0x4b, 0x69, 0x6e, 0x64, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63,
+	0x65, 0x52, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65, 0x72, 0x10, 0x02, 0x12, 0x16, 0x0a, 0x12, 0x4b,
+	0x69, 0x6e, 0x64, 0x49, 0x6e, 0x67, 0x72, 0x65, 0x73, 0x73, 0x47, 0x61, 0x74, 0x65, 0x77, 0x61,
+	0x79, 0x10, 0x03, 0x12, 0x19, 0x0a, 0x15, 0x4b, 0x69, 0x6e, 0x64, 0x53, 0x65, 0x72, 0x76, 0x69,
+	0x63, 0x65, 0x49, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x10, 0x04, 0x12, 0x0f,
+	0x0a, 0x0b, 0x4b, 0x69, 0x6e, 0x64, 0x47, 0x61, 0x74, 0x65, 0x77, 0x61, 0x79, 0x10, 0x05, 0x12,
+	0x10, 0x0a, 0x0c, 0x4b, 0x69, 0x6e, 0x64, 0x54, 0x43, 0x50, 0x52, 0x6f, 0x75, 0x74, 0x65, 0x10,
+	0x06, 0x2a, 0x26, 0x0a, 0x0f, 0x49, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x69, 0x6f, 0x6e, 0x41, 0x63,
 	0x74, 0x69, 0x6f, 0x6e, 0x12, 0x08, 0x0a, 0x04, 0x44, 0x65, 0x6e, 0x79, 0x10, 0x00, 0x12, 0x09,
 	0x0a, 0x05, 0x41, 0x6c, 0x6c, 0x6f, 0x77, 0x10, 0x01, 0x2a, 0x21, 0x0a, 0x13, 0x49, 0x6e, 0x74,
 	0x65, 0x6e, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x54, 0x79, 0x70, 0x65,
@@ -3087,7 +3414,7 @@ func file_proto_pbconfigentry_config_entry_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_pbconfigentry_config_entry_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_proto_pbconfigentry_config_entry_proto_msgTypes = make([]protoimpl.MessageInfo, 40)
+var file_proto_pbconfigentry_config_entry_proto_msgTypes = make([]protoimpl.MessageInfo, 46)
 var file_proto_pbconfigentry_config_entry_proto_goTypes = []interface{}{
 	(Kind)(0),                             // 0: hashicorp.consul.internal.configentry.Kind
 	(IntentionAction)(0),                  // 1: hashicorp.consul.internal.configentry.IntentionAction
@@ -3122,25 +3449,31 @@ var file_proto_pbconfigentry_config_entry_proto_goTypes = []interface{}{
 	(*IntentionPermission)(nil),           // 30: hashicorp.consul.internal.configentry.IntentionPermission
 	(*IntentionHTTPPermission)(nil),       // 31: hashicorp.consul.internal.configentry.IntentionHTTPPermission
 	(*IntentionHTTPHeaderPermission)(nil), // 32: hashicorp.consul.internal.configentry.IntentionHTTPHeaderPermission
-	nil,                                   // 33: hashicorp.consul.internal.configentry.MeshConfig.MetaEntry
-	nil,                                   // 34: hashicorp.consul.internal.configentry.ServiceResolver.SubsetsEntry
-	nil,                                   // 35: hashicorp.consul.internal.configentry.ServiceResolver.FailoverEntry
-	nil,                                   // 36: hashicorp.consul.internal.configentry.ServiceResolver.MetaEntry
-	nil,                                   // 37: hashicorp.consul.internal.configentry.IngressGateway.MetaEntry
-	nil,                                   // 38: hashicorp.consul.internal.configentry.IngressService.MetaEntry
-	nil,                                   // 39: hashicorp.consul.internal.configentry.HTTPHeaderModifiers.AddEntry
-	nil,                                   // 40: hashicorp.consul.internal.configentry.HTTPHeaderModifiers.SetEntry
-	nil,                                   // 41: hashicorp.consul.internal.configentry.ServiceIntentions.MetaEntry
-	nil,                                   // 42: hashicorp.consul.internal.configentry.SourceIntention.LegacyMetaEntry
-	(*pbcommon.EnterpriseMeta)(nil),       // 43: hashicorp.consul.internal.common.EnterpriseMeta
-	(*pbcommon.RaftIndex)(nil),            // 44: hashicorp.consul.internal.common.RaftIndex
-	(*durationpb.Duration)(nil),           // 45: google.protobuf.Duration
-	(*timestamppb.Timestamp)(nil),         // 46: google.protobuf.Timestamp
+	(*Gateway)(nil),                       // 33: hashicorp.consul.internal.configentry.Gateway
+	(*TCPRoute)(nil),                      // 34: hashicorp.consul.internal.configentry.TCPRoute
+	(*GatewayReference)(nil),              // 35: hashicorp.consul.internal.configentry.GatewayReference
+	(*TCPService)(nil),                    // 36: hashicorp.consul.internal.configentry.TCPService
+	nil,                                   // 37: hashicorp.consul.internal.configentry.MeshConfig.MetaEntry
+	nil,                                   // 38: hashicorp.consul.internal.configentry.ServiceResolver.SubsetsEntry
+	nil,                                   // 39: hashicorp.consul.internal.configentry.ServiceResolver.FailoverEntry
+	nil,                                   // 40: hashicorp.consul.internal.configentry.ServiceResolver.MetaEntry
+	nil,                                   // 41: hashicorp.consul.internal.configentry.IngressGateway.MetaEntry
+	nil,                                   // 42: hashicorp.consul.internal.configentry.IngressService.MetaEntry
+	nil,                                   // 43: hashicorp.consul.internal.configentry.HTTPHeaderModifiers.AddEntry
+	nil,                                   // 44: hashicorp.consul.internal.configentry.HTTPHeaderModifiers.SetEntry
+	nil,                                   // 45: hashicorp.consul.internal.configentry.ServiceIntentions.MetaEntry
+	nil,                                   // 46: hashicorp.consul.internal.configentry.SourceIntention.LegacyMetaEntry
+	nil,                                   // 47: hashicorp.consul.internal.configentry.Gateway.MetaEntry
+	nil,                                   // 48: hashicorp.consul.internal.configentry.TCPRoute.MetaEntry
+	(*pbcommon.EnterpriseMeta)(nil),       // 49: hashicorp.consul.internal.common.EnterpriseMeta
+	(*pbcommon.RaftIndex)(nil),            // 50: hashicorp.consul.internal.common.RaftIndex
+	(*durationpb.Duration)(nil),           // 51: google.protobuf.Duration
+	(*timestamppb.Timestamp)(nil),         // 52: google.protobuf.Timestamp
 }
 var file_proto_pbconfigentry_config_entry_proto_depIdxs = []int32{
 	0,  // 0: hashicorp.consul.internal.configentry.ConfigEntry.Kind:type_name -> hashicorp.consul.internal.configentry.Kind
-	43, // 1: hashicorp.consul.internal.configentry.ConfigEntry.EnterpriseMeta:type_name -> hashicorp.consul.internal.common.EnterpriseMeta
-	44, // 2: hashicorp.consul.internal.configentry.ConfigEntry.RaftIndex:type_name -> hashicorp.consul.internal.common.RaftIndex
+	49, // 1: hashicorp.consul.internal.configentry.ConfigEntry.EnterpriseMeta:type_name -> hashicorp.consul.internal.common.EnterpriseMeta
+	50, // 2: hashicorp.consul.internal.configentry.ConfigEntry.RaftIndex:type_name -> hashicorp.consul.internal.common.RaftIndex
 	4,  // 3: hashicorp.consul.internal.configentry.ConfigEntry.MeshConfig:type_name -> hashicorp.consul.internal.configentry.MeshConfig
 	10, // 4: hashicorp.consul.internal.configentry.ConfigEntry.ServiceResolver:type_name -> hashicorp.consul.internal.configentry.ServiceResolver
 	20, // 5: hashicorp.consul.internal.configentry.ConfigEntry.IngressGateway:type_name -> hashicorp.consul.internal.configentry.IngressGateway
@@ -3148,25 +3481,25 @@ var file_proto_pbconfigentry_config_entry_proto_depIdxs = []int32{
 	5,  // 7: hashicorp.consul.internal.configentry.MeshConfig.TransparentProxy:type_name -> hashicorp.consul.internal.configentry.TransparentProxyMeshConfig
 	6,  // 8: hashicorp.consul.internal.configentry.MeshConfig.TLS:type_name -> hashicorp.consul.internal.configentry.MeshTLSConfig
 	8,  // 9: hashicorp.consul.internal.configentry.MeshConfig.HTTP:type_name -> hashicorp.consul.internal.configentry.MeshHTTPConfig
-	33, // 10: hashicorp.consul.internal.configentry.MeshConfig.Meta:type_name -> hashicorp.consul.internal.configentry.MeshConfig.MetaEntry
+	37, // 10: hashicorp.consul.internal.configentry.MeshConfig.Meta:type_name -> hashicorp.consul.internal.configentry.MeshConfig.MetaEntry
 	9,  // 11: hashicorp.consul.internal.configentry.MeshConfig.Peering:type_name -> hashicorp.consul.internal.configentry.PeeringMeshConfig
 	7,  // 12: hashicorp.consul.internal.configentry.MeshTLSConfig.Incoming:type_name -> hashicorp.consul.internal.configentry.MeshDirectionalTLSConfig
 	7,  // 13: hashicorp.consul.internal.configentry.MeshTLSConfig.Outgoing:type_name -> hashicorp.consul.internal.configentry.MeshDirectionalTLSConfig
-	34, // 14: hashicorp.consul.internal.configentry.ServiceResolver.Subsets:type_name -> hashicorp.consul.internal.configentry.ServiceResolver.SubsetsEntry
+	38, // 14: hashicorp.consul.internal.configentry.ServiceResolver.Subsets:type_name -> hashicorp.consul.internal.configentry.ServiceResolver.SubsetsEntry
 	12, // 15: hashicorp.consul.internal.configentry.ServiceResolver.Redirect:type_name -> hashicorp.consul.internal.configentry.ServiceResolverRedirect
-	35, // 16: hashicorp.consul.internal.configentry.ServiceResolver.Failover:type_name -> hashicorp.consul.internal.configentry.ServiceResolver.FailoverEntry
-	45, // 17: hashicorp.consul.internal.configentry.ServiceResolver.ConnectTimeout:type_name -> google.protobuf.Duration
+	39, // 16: hashicorp.consul.internal.configentry.ServiceResolver.Failover:type_name -> hashicorp.consul.internal.configentry.ServiceResolver.FailoverEntry
+	51, // 17: hashicorp.consul.internal.configentry.ServiceResolver.ConnectTimeout:type_name -> google.protobuf.Duration
 	15, // 18: hashicorp.consul.internal.configentry.ServiceResolver.LoadBalancer:type_name -> hashicorp.consul.internal.configentry.LoadBalancer
-	36, // 19: hashicorp.consul.internal.configentry.ServiceResolver.Meta:type_name -> hashicorp.consul.internal.configentry.ServiceResolver.MetaEntry
+	40, // 19: hashicorp.consul.internal.configentry.ServiceResolver.Meta:type_name -> hashicorp.consul.internal.configentry.ServiceResolver.MetaEntry
 	14, // 20: hashicorp.consul.internal.configentry.ServiceResolverFailover.Targets:type_name -> hashicorp.consul.internal.configentry.ServiceResolverFailoverTarget
 	16, // 21: hashicorp.consul.internal.configentry.LoadBalancer.RingHashConfig:type_name -> hashicorp.consul.internal.configentry.RingHashConfig
 	17, // 22: hashicorp.consul.internal.configentry.LoadBalancer.LeastRequestConfig:type_name -> hashicorp.consul.internal.configentry.LeastRequestConfig
 	18, // 23: hashicorp.consul.internal.configentry.LoadBalancer.HashPolicies:type_name -> hashicorp.consul.internal.configentry.HashPolicy
 	19, // 24: hashicorp.consul.internal.configentry.HashPolicy.CookieConfig:type_name -> hashicorp.consul.internal.configentry.CookieConfig
-	45, // 25: hashicorp.consul.internal.configentry.CookieConfig.TTL:type_name -> google.protobuf.Duration
+	51, // 25: hashicorp.consul.internal.configentry.CookieConfig.TTL:type_name -> google.protobuf.Duration
 	22, // 26: hashicorp.consul.internal.configentry.IngressGateway.TLS:type_name -> hashicorp.consul.internal.configentry.GatewayTLSConfig
 	24, // 27: hashicorp.consul.internal.configentry.IngressGateway.Listeners:type_name -> hashicorp.consul.internal.configentry.IngressListener
-	37, // 28: hashicorp.consul.internal.configentry.IngressGateway.Meta:type_name -> hashicorp.consul.internal.configentry.IngressGateway.MetaEntry
+	41, // 28: hashicorp.consul.internal.configentry.IngressGateway.Meta:type_name -> hashicorp.consul.internal.configentry.IngressGateway.MetaEntry
 	21, // 29: hashicorp.consul.internal.configentry.IngressGateway.Defaults:type_name -> hashicorp.consul.internal.configentry.IngressServiceConfig
 	23, // 30: hashicorp.consul.internal.configentry.GatewayTLSConfig.SDS:type_name -> hashicorp.consul.internal.configentry.GatewayTLSSDSConfig
 	25, // 31: hashicorp.consul.internal.configentry.IngressListener.Services:type_name -> hashicorp.consul.internal.configentry.IngressService
@@ -3174,30 +3507,36 @@ var file_proto_pbconfigentry_config_entry_proto_depIdxs = []int32{
 	26, // 33: hashicorp.consul.internal.configentry.IngressService.TLS:type_name -> hashicorp.consul.internal.configentry.GatewayServiceTLSConfig
 	27, // 34: hashicorp.consul.internal.configentry.IngressService.RequestHeaders:type_name -> hashicorp.consul.internal.configentry.HTTPHeaderModifiers
 	27, // 35: hashicorp.consul.internal.configentry.IngressService.ResponseHeaders:type_name -> hashicorp.consul.internal.configentry.HTTPHeaderModifiers
-	38, // 36: hashicorp.consul.internal.configentry.IngressService.Meta:type_name -> hashicorp.consul.internal.configentry.IngressService.MetaEntry
-	43, // 37: hashicorp.consul.internal.configentry.IngressService.EnterpriseMeta:type_name -> hashicorp.consul.internal.common.EnterpriseMeta
+	42, // 36: hashicorp.consul.internal.configentry.IngressService.Meta:type_name -> hashicorp.consul.internal.configentry.IngressService.MetaEntry
+	49, // 37: hashicorp.consul.internal.configentry.IngressService.EnterpriseMeta:type_name -> hashicorp.consul.internal.common.EnterpriseMeta
 	23, // 38: hashicorp.consul.internal.configentry.GatewayServiceTLSConfig.SDS:type_name -> hashicorp.consul.internal.configentry.GatewayTLSSDSConfig
-	39, // 39: hashicorp.consul.internal.configentry.HTTPHeaderModifiers.Add:type_name -> hashicorp.consul.internal.configentry.HTTPHeaderModifiers.AddEntry
-	40, // 40: hashicorp.consul.internal.configentry.HTTPHeaderModifiers.Set:type_name -> hashicorp.consul.internal.configentry.HTTPHeaderModifiers.SetEntry
+	43, // 39: hashicorp.consul.internal.configentry.HTTPHeaderModifiers.Add:type_name -> hashicorp.consul.internal.configentry.HTTPHeaderModifiers.AddEntry
+	44, // 40: hashicorp.consul.internal.configentry.HTTPHeaderModifiers.Set:type_name -> hashicorp.consul.internal.configentry.HTTPHeaderModifiers.SetEntry
 	29, // 41: hashicorp.consul.internal.configentry.ServiceIntentions.Sources:type_name -> hashicorp.consul.internal.configentry.SourceIntention
-	41, // 42: hashicorp.consul.internal.configentry.ServiceIntentions.Meta:type_name -> hashicorp.consul.internal.configentry.ServiceIntentions.MetaEntry
+	45, // 42: hashicorp.consul.internal.configentry.ServiceIntentions.Meta:type_name -> hashicorp.consul.internal.configentry.ServiceIntentions.MetaEntry
 	1,  // 43: hashicorp.consul.internal.configentry.SourceIntention.Action:type_name -> hashicorp.consul.internal.configentry.IntentionAction
 	30, // 44: hashicorp.consul.internal.configentry.SourceIntention.Permissions:type_name -> hashicorp.consul.internal.configentry.IntentionPermission
 	2,  // 45: hashicorp.consul.internal.configentry.SourceIntention.Type:type_name -> hashicorp.consul.internal.configentry.IntentionSourceType
-	42, // 46: hashicorp.consul.internal.configentry.SourceIntention.LegacyMeta:type_name -> hashicorp.consul.internal.configentry.SourceIntention.LegacyMetaEntry
-	46, // 47: hashicorp.consul.internal.configentry.SourceIntention.LegacyCreateTime:type_name -> google.protobuf.Timestamp
-	46, // 48: hashicorp.consul.internal.configentry.SourceIntention.LegacyUpdateTime:type_name -> google.protobuf.Timestamp
-	43, // 49: hashicorp.consul.internal.configentry.SourceIntention.EnterpriseMeta:type_name -> hashicorp.consul.internal.common.EnterpriseMeta
+	46, // 46: hashicorp.consul.internal.configentry.SourceIntention.LegacyMeta:type_name -> hashicorp.consul.internal.configentry.SourceIntention.LegacyMetaEntry
+	52, // 47: hashicorp.consul.internal.configentry.SourceIntention.LegacyCreateTime:type_name -> google.protobuf.Timestamp
+	52, // 48: hashicorp.consul.internal.configentry.SourceIntention.LegacyUpdateTime:type_name -> google.protobuf.Timestamp
+	49, // 49: hashicorp.consul.internal.configentry.SourceIntention.EnterpriseMeta:type_name -> hashicorp.consul.internal.common.EnterpriseMeta
 	1,  // 50: hashicorp.consul.internal.configentry.IntentionPermission.Action:type_name -> hashicorp.consul.internal.configentry.IntentionAction
 	31, // 51: hashicorp.consul.internal.configentry.IntentionPermission.HTTP:type_name -> hashicorp.consul.internal.configentry.IntentionHTTPPermission
 	32, // 52: hashicorp.consul.internal.configentry.IntentionHTTPPermission.Header:type_name -> hashicorp.consul.internal.configentry.IntentionHTTPHeaderPermission
-	11, // 53: hashicorp.consul.internal.configentry.ServiceResolver.SubsetsEntry.value:type_name -> hashicorp.consul.internal.configentry.ServiceResolverSubset
-	13, // 54: hashicorp.consul.internal.configentry.ServiceResolver.FailoverEntry.value:type_name -> hashicorp.consul.internal.configentry.ServiceResolverFailover
-	55, // [55:55] is the sub-list for method output_type
-	55, // [55:55] is the sub-list for method input_type
-	55, // [55:55] is the sub-list for extension type_name
-	55, // [55:55] is the sub-list for extension extendee
-	0,  // [0:55] is the sub-list for field type_name
+	47, // 53: hashicorp.consul.internal.configentry.Gateway.Meta:type_name -> hashicorp.consul.internal.configentry.Gateway.MetaEntry
+	35, // 54: hashicorp.consul.internal.configentry.TCPRoute.Gateways:type_name -> hashicorp.consul.internal.configentry.GatewayReference
+	36, // 55: hashicorp.consul.internal.configentry.TCPRoute.Services:type_name -> hashicorp.consul.internal.configentry.TCPService
+	48, // 56: hashicorp.consul.internal.configentry.TCPRoute.Meta:type_name -> hashicorp.consul.internal.configentry.TCPRoute.MetaEntry
+	49, // 57: hashicorp.consul.internal.configentry.GatewayReference.EnterpriseMeta:type_name -> hashicorp.consul.internal.common.EnterpriseMeta
+	49, // 58: hashicorp.consul.internal.configentry.TCPService.EnterpriseMeta:type_name -> hashicorp.consul.internal.common.EnterpriseMeta
+	11, // 59: hashicorp.consul.internal.configentry.ServiceResolver.SubsetsEntry.value:type_name -> hashicorp.consul.internal.configentry.ServiceResolverSubset
+	13, // 60: hashicorp.consul.internal.configentry.ServiceResolver.FailoverEntry.value:type_name -> hashicorp.consul.internal.configentry.ServiceResolverFailover
+	61, // [61:61] is the sub-list for method output_type
+	61, // [61:61] is the sub-list for method input_type
+	61, // [61:61] is the sub-list for extension type_name
+	61, // [61:61] is the sub-list for extension extendee
+	0,  // [0:61] is the sub-list for field type_name
 }
 
 func init() { file_proto_pbconfigentry_config_entry_proto_init() }
@@ -3566,6 +3905,54 @@ func file_proto_pbconfigentry_config_entry_proto_init() {
 				return nil
 			}
 		}
+		file_proto_pbconfigentry_config_entry_proto_msgTypes[30].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Gateway); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_proto_pbconfigentry_config_entry_proto_msgTypes[31].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TCPRoute); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_proto_pbconfigentry_config_entry_proto_msgTypes[32].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GatewayReference); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_proto_pbconfigentry_config_entry_proto_msgTypes[33].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TCPService); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	file_proto_pbconfigentry_config_entry_proto_msgTypes[0].OneofWrappers = []interface{}{
 		(*ConfigEntry_MeshConfig)(nil),
@@ -3579,7 +3966,7 @@ func file_proto_pbconfigentry_config_entry_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_proto_pbconfigentry_config_entry_proto_rawDesc,
 			NumEnums:      3,
-			NumMessages:   40,
+			NumMessages:   46,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

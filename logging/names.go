@@ -64,4 +64,6 @@ const (
 	XDSCapacityController string = "xds_capacity_controller"
 	Vault                 string = "vault"
 	Health                string = "health"
+	GatewayController     string = "gateway_controller"
+	TCPRouteController    string = "tcp_route_controller"
 )

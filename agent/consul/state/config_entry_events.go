@@ -16,6 +16,8 @@ var configEntryKindToTopic = map[string]stream.Topic{
 	structs.ServiceResolver:   EventTopicServiceResolver,
 	structs.IngressGateway:    EventTopicIngressGateway,
 	structs.ServiceIntentions: EventTopicServiceIntentions,
+	structs.Gateway:           EventTopicGateway,
+	structs.TCPRoute:          EventTopicTCPRoute,
 }
 
 // EventSubjectConfigEntry is a stream.Subject used to route and receive events
@@ -102,6 +104,18 @@ func (s *Store) ServiceResolverSnapshot(req stream.SubscribeRequest, buf stream.
 // ingress-gateway config entries.
 func (s *Store) IngressGatewaySnapshot(req stream.SubscribeRequest, buf stream.SnapshotAppender) (uint64, error) {
 	return s.configEntrySnapshot(structs.IngressGateway, req, buf)
+}
+
+// GatewaySnapshot is a stream.SnapshotFunc that returns a snapshot of
+// gateway config entries.
+func (s *Store) GatewaySnapshot(req stream.SubscribeRequest, buf stream.SnapshotAppender) (uint64, error) {
+	return s.configEntrySnapshot(structs.Gateway, req, buf)
+}
+
+// TCPRouteSnapshot is a stream.SnapshotFunc that returns a snapshot of
+// tcp-route config entries.
+func (s *Store) TCPRouteSnapshot(req stream.SubscribeRequest, buf stream.SnapshotAppender) (uint64, error) {
+	return s.configEntrySnapshot(structs.TCPRoute, req, buf)
 }
 
 // ServiceIntentionsSnapshot is a stream.SnapshotFunc that returns a snapshot of

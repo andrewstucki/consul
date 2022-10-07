@@ -331,4 +331,18 @@ func (c *FSM) registerStreamSnapshotHandlers() {
 	if err != nil {
 		panic(fmt.Errorf("fatal error encountered registering streaming snapshot handlers: %w", err))
 	}
+
+	err = c.deps.Publisher.RegisterHandler(state.EventTopicGateway, func(req stream.SubscribeRequest, buf stream.SnapshotAppender) (uint64, error) {
+		return c.State().GatewaySnapshot(req, buf)
+	}, true)
+	if err != nil {
+		panic(fmt.Errorf("fatal error encountered registering streaming snapshot handlers: %w", err))
+	}
+
+	err = c.deps.Publisher.RegisterHandler(state.EventTopicTCPRoute, func(req stream.SubscribeRequest, buf stream.SnapshotAppender) (uint64, error) {
+		return c.State().TCPRouteSnapshot(req, buf)
+	}, true)
+	if err != nil {
+		panic(fmt.Errorf("fatal error encountered registering streaming snapshot handlers: %w", err))
+	}
 }
