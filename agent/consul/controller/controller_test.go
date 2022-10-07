@@ -261,44 +261,50 @@ func TestBasicController_Triggers(t *testing.T) {
 		Name: "foo-1",
 	}
 
-	trigger := make(chan struct{}, 3)
-	controller.AddTrigger(request, func(ctx context.Context) error {
+	triggerOneChan := make(chan struct{}, 3)
+	triggerOne := func(ctx context.Context) error {
 		select {
-		case <-trigger:
+		case <-triggerOneChan:
 			return nil
 		case <-ctx.Done():
 			return nil
 		}
-	})
+	}
+	controller.AddTrigger(request, triggerOne)
 	require.False(t, ensureCalled(reconciler.received, "foo-1"))
-	trigger <- struct{}{}
+	triggerOneChan <- struct{}{}
 	reconciler.stepFor(10 * time.Millisecond)
 	require.True(t, ensureCalled(reconciler.received, "foo-1"))
+
+	// do it again
 	require.False(t, ensureCalled(reconciler.received, "foo-1"))
-	trigger <- struct{}{}
+	controller.AddTrigger(request, triggerOne)
+	triggerOneChan <- struct{}{}
 	reconciler.stepFor(10 * time.Millisecond)
 	require.True(t, ensureCalled(reconciler.received, "foo-1"))
 
 	// check with the overwritten trigger
-	triggerTwo := make(chan struct{}, 2)
-	controller.AddTrigger(request, func(ctx context.Context) error {
+	controller.AddTrigger(request, triggerOne)
+	triggerTwoChan := make(chan struct{}, 2)
+	triggerTwo := func(ctx context.Context) error {
 		select {
-		case <-triggerTwo:
+		case <-triggerTwoChan:
 			return nil
 		case <-ctx.Done():
 			return nil
 		}
-	})
-	trigger <- struct{}{}
+	}
+	controller.AddTrigger(request, triggerTwo)
+	triggerOneChan <- struct{}{}
 	reconciler.stepFor(10 * time.Millisecond)
 	require.False(t, ensureCalled(reconciler.received, "foo-1"))
-	triggerTwo <- struct{}{}
+	triggerTwoChan <- struct{}{}
 	reconciler.stepFor(10 * time.Millisecond)
 	require.True(t, ensureCalled(reconciler.received, "foo-1"))
 
 	// remove the trigger and make sure we're not called again
 	controller.RemoveTrigger(request)
-	triggerTwo <- struct{}{}
+	triggerTwoChan <- struct{}{}
 	reconciler.stepFor(10 * time.Millisecond)
 	require.False(t, ensureCalled(reconciler.received, "foo-1"))
 }
@@ -333,16 +339,6 @@ func TestDiscoveryChainController(t *testing.T) {
 		Kind: structs.IngressGateway,
 		Name: "foo-1",
 	}
-	trigger := func(ctx context.Context) error {
-		ws := memdb.NewWatchSet()
-		ws.Add(store.AbandonCh())
-		_, _, err := store.ReadDiscoveryChainConfigEntries(ws, "foo-2", nil, nil)
-		if err != nil {
-			return err
-		}
-		return ws.WatchCtx(ctx)
-	}
-	controller.AddTrigger(request, trigger)
 
 	ensureCalled := func(request chan Request, name string) bool {
 		select {
@@ -361,8 +357,14 @@ func TestDiscoveryChainController(t *testing.T) {
 	}))
 	require.True(t, ensureCalled(reconciler.received, "foo-1"))
 
-	// create something that changes in its upstream discovery chain and ensure that we've
+	// create the trigger and something that changes in its upstream discovery chain and ensure that we've
 	// fired the reconciler
+	ws := memdb.NewWatchSet()
+	ws.Add(store.AbandonCh())
+	_, _, err := store.ReadDiscoveryChainConfigEntries(ws, "foo-2", nil, nil)
+	require.NoError(t, err)
+	controller.AddTrigger(request, ws.WatchCtx)
+
 	require.False(t, ensureCalled(reconciler.received, "foo-1"))
 	require.NoError(t, store.EnsureConfigEntry(1, &structs.ServiceResolverConfigEntry{
 		Kind: structs.ServiceResolver,

@@ -236,27 +236,35 @@ func (c *controller) AddTrigger(request Request, trigger func(ctx context.Contex
 	c.triggerMutex.Unlock()
 
 	c.group.Go(func() error {
-		timer := time.NewTimer(0)
-		limiter := NewRateLimiter(10*time.Millisecond, 10*time.Second)
-		for {
-			select {
-			case <-timer.C:
-				if err := trigger(ctx); err != nil {
-					timer = time.NewTimer(limiter.NextRetry(request))
-				} else {
-					select {
-					case <-ctx.Done():
-						return nil
-					default:
-						c.work.Add(request)
-						limiter.Forget(request)
-						timer = time.NewTimer(0)
-					}
-				}
-			case <-ctx.Done():
-				return nil
-			}
+		trigger(ctx)
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+			c.work.Add(request)
+			return nil
 		}
+		// timer := time.NewTimer(0)
+		// limiter := NewRateLimiter(10*time.Millisecond, 10*time.Second)
+		// for {
+		// 	select {
+		// 	case <-timer.C:
+		// 		if err := trigger(ctx); err != nil {
+		// 			timer = time.NewTimer(limiter.NextRetry(request))
+		// 		} else {
+		// 			select {
+		// 			case <-ctx.Done():
+		// 				return nil
+		// 			default:
+		// 				c.work.Add(request)
+		// 				limiter.Forget(request)
+		// 				timer = time.NewTimer(0)
+		// 			}
+		// 		}
+		// 	case <-ctx.Done():
+		// 		return nil
+		// 	}
+		// }
 	})
 }
 
