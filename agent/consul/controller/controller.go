@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/consul/agent/consul/state"
 	"github.com/hashicorp/consul/agent/consul/stream"
 	"github.com/hashicorp/consul/agent/structs"
+	"github.com/hashicorp/go-hclog"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -96,6 +97,9 @@ type controller struct {
 	triggers map[Request]func()
 	// triggerMutex is used for accessing the above map
 	triggerMutex sync.Mutex
+
+	// logger is the logger for the controller
+	logger hclog.Logger
 }
 
 // New returns a new Controller associated with the given state store and reconciler.
@@ -109,6 +113,7 @@ func New(publisher state.EventPublisher, reconciler Reconciler) Controller {
 		makeQueue:   RunWorkQueue,
 		started:     make(chan struct{}),
 		triggers:    make(map[Request]func()),
+		logger:      hclog.NewNullLogger(),
 	}
 }
 
@@ -216,7 +221,11 @@ func (c *controller) Start(ctx context.Context) error {
 		})
 	}
 
-	return c.group.Wait()
+	if err := c.group.Wait(); err != nil {
+		c.logger.Error("error running controller", "error", err)
+		return err
+	}
+	return nil
 }
 
 // AddTrigger allows for triggering a reconciliation request every time that the
@@ -236,7 +245,9 @@ func (c *controller) AddTrigger(request Request, trigger func(ctx context.Contex
 	c.triggerMutex.Unlock()
 
 	c.group.Go(func() error {
-		trigger(ctx)
+		if err := trigger(ctx); err != nil {
+			c.logger.Error("error while running trigger, adding re-reconcilation anyway", "error", err)
+		}
 		select {
 		case <-ctx.Done():
 			return nil
@@ -318,6 +329,8 @@ func (c *controller) reconcile(ctx context.Context, req Request) (err error) {
 // to determine whether the request should be rescheduled
 func (c *controller) reconcileHandler(ctx context.Context, req Request) {
 	if err := c.reconcile(ctx, req); err != nil {
+		c.logger.Trace("received error for reconciliation request", "request", req, "error", err)
+
 		// handle the case where we're specifically told to requeue later
 		var requeueAfter RequeueAfterError
 		if errors.As(err, &requeueAfter) {
