@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/consul/agent/consul/stream"
 	"github.com/hashicorp/consul/agent/structs"
 	"github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/go-memdb"
 	"github.com/stretchr/testify/require"
 )
 
@@ -261,11 +262,12 @@ func TestBasicController_Triggers(t *testing.T) {
 	}
 
 	trigger := make(chan struct{}, 3)
-	controller.AddTrigger(request, func(ctx context.Context) {
+	controller.AddTrigger(request, func(ctx context.Context) error {
 		select {
 		case <-trigger:
+			return nil
 		case <-ctx.Done():
-			return
+			return nil
 		}
 	})
 	require.False(t, ensureCalled(reconciler.received, "foo-1"))
@@ -279,11 +281,12 @@ func TestBasicController_Triggers(t *testing.T) {
 
 	// check with the overwritten trigger
 	triggerTwo := make(chan struct{}, 2)
-	controller.AddTrigger(request, func(ctx context.Context) {
+	controller.AddTrigger(request, func(ctx context.Context) error {
 		select {
 		case <-triggerTwo:
+			return nil
 		case <-ctx.Done():
-			return
+			return nil
 		}
 	})
 	trigger <- struct{}{}
@@ -298,4 +301,72 @@ func TestBasicController_Triggers(t *testing.T) {
 	triggerTwo <- struct{}{}
 	reconciler.stepFor(10 * time.Millisecond)
 	require.False(t, ensureCalled(reconciler.received, "foo-1"))
+}
+
+func TestDiscoveryChainController(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	reconciler := newTestReconciler(false)
+
+	publisher := stream.NewEventPublisher(1 * time.Millisecond)
+	go publisher.Run(ctx)
+
+	// get the store through the FSM since the publisher handlers get registered through it
+	store := fsm.NewFromDeps(fsm.Deps{
+		Logger: hclog.New(nil),
+		NewStateStore: func() *state.Store {
+			return state.NewStateStoreWithEventPublisher(nil, publisher)
+		},
+		Publisher: publisher,
+	}).State()
+
+	controller := New(publisher, reconciler)
+	go controller.Subscribe(&stream.SubscribeRequest{
+		Topic:   state.EventTopicIngressGateway,
+		Subject: stream.SubjectWildcard,
+	}).WithWorkers(10).Start(ctx)
+
+	request := Request{
+		Kind: structs.IngressGateway,
+		Name: "foo-1",
+	}
+	trigger := func(ctx context.Context) error {
+		ws := memdb.NewWatchSet()
+		ws.Add(store.AbandonCh())
+		_, _, err := store.ReadDiscoveryChainConfigEntries(ws, "foo-2", nil, nil)
+		if err != nil {
+			return err
+		}
+		return ws.WatchCtx(ctx)
+	}
+	controller.AddTrigger(request, trigger)
+
+	ensureCalled := func(request chan Request, name string) bool {
+		select {
+		case req := <-request:
+			require.Equal(t, structs.IngressGateway, req.Kind)
+			require.Equal(t, name, req.Name)
+			return true
+		case <-time.After(10 * time.Millisecond):
+			return false
+		}
+	}
+
+	require.NoError(t, store.EnsureConfigEntry(1, &structs.IngressGatewayConfigEntry{
+		Kind: structs.IngressGateway,
+		Name: "foo-1",
+	}))
+	require.True(t, ensureCalled(reconciler.received, "foo-1"))
+
+	// create something that changes in its upstream discovery chain and ensure that we've
+	// fired the reconciler
+	require.False(t, ensureCalled(reconciler.received, "foo-1"))
+	require.NoError(t, store.EnsureConfigEntry(1, &structs.ServiceResolverConfigEntry{
+		Kind: structs.ServiceResolver,
+		Name: "foo-2",
+	}))
+	require.True(t, ensureCalled(reconciler.received, "foo-1"))
 }

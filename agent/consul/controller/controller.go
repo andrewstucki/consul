@@ -46,7 +46,7 @@ type Controller interface {
 	// AddTrigger allows for triggering a reconciliation request every time that the
 	// triggering function returns, when the passed in context is canceled
 	// the trigger must return
-	AddTrigger(request Request, trigger func(ctx context.Context))
+	AddTrigger(request Request, trigger func(ctx context.Context) error)
 	// RemoveTrigger removes the triggering function associated with the Request object
 	RemoveTrigger(request Request)
 }
@@ -222,7 +222,7 @@ func (c *controller) Start(ctx context.Context) error {
 // AddTrigger allows for triggering a reconciliation request every time that the
 // triggering function returns, when the passed in context is canceled
 // the trigger must return
-func (c *controller) AddTrigger(request Request, trigger func(ctx context.Context)) {
+func (c *controller) AddTrigger(request Request, trigger func(ctx context.Context) error) {
 	c.wait()
 
 	ctx, cancel := context.WithCancel(c.groupCtx)
@@ -236,13 +236,25 @@ func (c *controller) AddTrigger(request Request, trigger func(ctx context.Contex
 	c.triggerMutex.Unlock()
 
 	c.group.Go(func() error {
+		timer := time.NewTimer(0)
+		limiter := NewRateLimiter(10*time.Millisecond, 10*time.Second)
 		for {
-			trigger(ctx)
 			select {
+			case <-timer.C:
+				if err := trigger(ctx); err != nil {
+					timer = time.NewTimer(limiter.NextRetry(request))
+				} else {
+					select {
+					case <-ctx.Done():
+						return nil
+					default:
+						c.work.Add(request)
+						limiter.Forget(request)
+						timer = time.NewTimer(0)
+					}
+				}
 			case <-ctx.Done():
 				return nil
-			default:
-				c.work.Add(request)
 			}
 		}
 	})

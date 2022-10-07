@@ -1183,27 +1183,13 @@ func (s *Store) ReadResolvedServiceConfigEntries(
 // the provided service name. All relevant config entries will be recursively
 // fetched and included in the result.
 //
-// Once returned, the caller still needs to assemble these into a useful graph
-// structure.
-func (s *Store) ReadDiscoveryChainConfigEntries(
-	ws memdb.WatchSet,
-	serviceName string,
-	entMeta *acl.EnterpriseMeta,
-) (uint64, *configentry.DiscoveryChainSet, error) {
-	return s.readDiscoveryChainConfigEntries(ws, serviceName, nil, entMeta)
-}
-
-// readDiscoveryChainConfigEntries will query for the full discovery chain for
-// the provided service name. All relevant config entries will be recursively
-// fetched and included in the result.
-//
 // If 'overrides' is provided then it will use entries in that map instead of
 // the database to simulate the entries that go into a modified discovery chain
 // without actually modifying it yet. Nil values are tombstones to simulate
 // deleting an entry.
 //
 // Overrides is not mutated.
-func (s *Store) readDiscoveryChainConfigEntries(
+func (s *Store) ReadDiscoveryChainConfigEntries(
 	ws memdb.WatchSet,
 	serviceName string,
 	overrides map[configentry.KindName]structs.ConfigEntry,

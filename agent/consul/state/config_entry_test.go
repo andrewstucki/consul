@@ -1955,14 +1955,14 @@ func TestStore_ReadDiscoveryChainConfigEntries_Overrides(t *testing.T) {
 			}
 
 			t.Run("without override", func(t *testing.T) {
-				_, entrySet, err := s.readDiscoveryChainConfigEntries(nil, "main", nil, nil)
+				_, entrySet, err := s.ReadDiscoveryChainConfigEntries(nil, "main", nil, nil)
 				require.NoError(t, err)
 				got := entrySetToKindNames(entrySet)
 				require.ElementsMatch(t, tc.expectBefore, got)
 			})
 
 			t.Run("with override", func(t *testing.T) {
-				_, entrySet, err := s.readDiscoveryChainConfigEntries(nil, "main", tc.overrides, nil)
+				_, entrySet, err := s.ReadDiscoveryChainConfigEntries(nil, "main", tc.overrides, nil)
 
 				if tc.expectAfterErr != "" {
 					require.Error(t, err)
@@ -2056,7 +2056,7 @@ func TestStore_ReadDiscoveryChainConfigEntries_SubsetSplit(t *testing.T) {
 		require.NoError(t, s.EnsureConfigEntry(0, entry))
 	}
 
-	_, entrySet, err := s.readDiscoveryChainConfigEntries(nil, "main", nil, nil)
+	_, entrySet, err := s.ReadDiscoveryChainConfigEntries(nil, "main", nil, nil)
 	require.NoError(t, err)
 
 	require.Len(t, entrySet.Routers, 0)
