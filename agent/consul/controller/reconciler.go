@@ -14,7 +14,7 @@ import (
 type Request struct {
 	Kind string
 	Name string
-	Meta *acl.EnterpriseMeta
+	Meta acl.EnterpriseMeta
 }
 
 // RequeueAfterError is an error that allows a Reconciler to override the
