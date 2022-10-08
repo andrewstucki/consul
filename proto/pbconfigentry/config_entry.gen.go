@@ -24,27 +24,43 @@ func GatewayToStructs(s *Gateway, t *structs.GatewayConfigEntry) {
 	if s == nil {
 		return
 	}
+	{
+		t.Listeners = make([]structs.GatewayListener, len(s.Listeners))
+		for i := range s.Listeners {
+			if s.Listeners[i] != nil {
+				GatewayListenerToStructs(s.Listeners[i], &t.Listeners[i])
+			}
+		}
+	}
 	t.Meta = s.Meta
 }
 func GatewayFromStructs(t *structs.GatewayConfigEntry, s *Gateway) {
 	if s == nil {
 		return
 	}
+	{
+		s.Listeners = make([]*GatewayListener, len(t.Listeners))
+		for i := range t.Listeners {
+			{
+				var x GatewayListener
+				GatewayListenerFromStructs(&t.Listeners[i], &x)
+				s.Listeners[i] = &x
+			}
+		}
+	}
 	s.Meta = t.Meta
 }
-func GatewayReferenceToStructs(s *GatewayReference, t *structs.GatewayReference) {
+func GatewayListenerToStructs(s *GatewayListener, t *structs.GatewayListener) {
 	if s == nil {
 		return
 	}
 	t.Name = s.Name
-	t.EnterpriseMeta = enterpriseMetaToStructs(s.EnterpriseMeta)
 }
-func GatewayReferenceFromStructs(t *structs.GatewayReference, s *GatewayReference) {
+func GatewayListenerFromStructs(t *structs.GatewayListener, s *GatewayListener) {
 	if s == nil {
 		return
 	}
 	s.Name = t.Name
-	s.EnterpriseMeta = enterpriseMetaFromStructs(t.EnterpriseMeta)
 }
 func GatewayServiceTLSConfigToStructs(s *GatewayServiceTLSConfig, t *structs.GatewayServiceTLSConfig) {
 	if s == nil {
@@ -564,6 +580,24 @@ func MeshTLSConfigFromStructs(t *structs.MeshTLSConfig, s *MeshTLSConfig) {
 		s.Outgoing = &x
 	}
 }
+func ParentReferenceToStructs(s *ParentReference, t *structs.ParentReference) {
+	if s == nil {
+		return
+	}
+	t.Kind = s.Kind
+	t.Name = s.Name
+	t.SectionName = s.SectionName
+	t.EnterpriseMeta = enterpriseMetaToStructs(s.EnterpriseMeta)
+}
+func ParentReferenceFromStructs(t *structs.ParentReference, s *ParentReference) {
+	if s == nil {
+		return
+	}
+	s.Kind = t.Kind
+	s.Name = t.Name
+	s.SectionName = t.SectionName
+	s.EnterpriseMeta = enterpriseMetaFromStructs(t.EnterpriseMeta)
+}
 func PeeringMeshConfigToStructs(s *PeeringMeshConfig, t *structs.PeeringMeshConfig) {
 	if s == nil {
 		return
@@ -853,10 +887,10 @@ func TCPRouteToStructs(s *TCPRoute, t *structs.TCPRouteConfigEntry) {
 		return
 	}
 	{
-		t.Gateways = make([]structs.GatewayReference, len(s.Gateways))
-		for i := range s.Gateways {
-			if s.Gateways[i] != nil {
-				GatewayReferenceToStructs(s.Gateways[i], &t.Gateways[i])
+		t.Parents = make([]structs.ParentReference, len(s.Parents))
+		for i := range s.Parents {
+			if s.Parents[i] != nil {
+				ParentReferenceToStructs(s.Parents[i], &t.Parents[i])
 			}
 		}
 	}
@@ -875,12 +909,12 @@ func TCPRouteFromStructs(t *structs.TCPRouteConfigEntry, s *TCPRoute) {
 		return
 	}
 	{
-		s.Gateways = make([]*GatewayReference, len(t.Gateways))
-		for i := range t.Gateways {
+		s.Parents = make([]*ParentReference, len(t.Parents))
+		for i := range t.Parents {
 			{
-				var x GatewayReference
-				GatewayReferenceFromStructs(&t.Gateways[i], &x)
-				s.Gateways[i] = &x
+				var x ParentReference
+				ParentReferenceFromStructs(&t.Parents[i], &x)
+				s.Parents[i] = &x
 			}
 		}
 	}

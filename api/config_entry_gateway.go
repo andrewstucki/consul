@@ -44,7 +44,7 @@ type TCPRouteConfigEntry struct {
 
 	Name string
 
-	Gateways []GatewayReference
+	Parents []ParentReference
 
 	Meta     map[string]string `json:",omitempty"`
 	Services []TCPService
@@ -87,8 +87,10 @@ type TCPService struct {
 	Namespace string `json:",omitempty"`
 }
 
-type GatewayReference struct {
-	Name string
+type ParentReference struct {
+	Kind        string
+	Name        string
+	SectionName string
 	// Partition is the partition the IngressGateway is associated with.
 	// Partitioning is a Consul Enterprise feature.
 	Partition string `json:",omitempty"`

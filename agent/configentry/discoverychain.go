@@ -147,3 +147,47 @@ func (e *DiscoveryChainSet) IsEmpty() bool {
 func (e *DiscoveryChainSet) IsChainEmpty() bool {
 	return len(e.Routers) == 0 && len(e.Splitters) == 0 && len(e.Resolvers) == 0
 }
+
+// Flatten returns the flattened array of all contained entries
+func (e *DiscoveryChainSet) Flatten() (
+	routers []*structs.ServiceRouterConfigEntry,
+	splitters []*structs.ServiceSplitterConfigEntry,
+	resolvers []*structs.ServiceResolverConfigEntry,
+	defaults []*structs.ServiceConfigEntry,
+	proxies []*structs.ProxyConfigEntry,
+) {
+	for _, e := range e.Routers {
+		routers = append(routers, e)
+	}
+	for _, e := range e.Splitters {
+		splitters = append(splitters, e)
+	}
+	for _, e := range e.Resolvers {
+		resolvers = append(resolvers, e)
+	}
+	for _, e := range e.Services {
+		defaults = append(defaults, e)
+	}
+	for _, e := range e.ProxyDefaults {
+		proxies = append(proxies, e)
+	}
+	return
+}
+
+// NewDiscoveryChainSetFromFlattened returns a discovery chain set containing
+// all of the given entries
+func NewDiscoveryChainSetFromFlattened(
+	routers []*structs.ServiceRouterConfigEntry,
+	splitters []*structs.ServiceSplitterConfigEntry,
+	resolvers []*structs.ServiceResolverConfigEntry,
+	defaults []*structs.ServiceConfigEntry,
+	proxies []*structs.ProxyConfigEntry,
+) *DiscoveryChainSet {
+	set := NewDiscoveryChainSet()
+	set.AddRouters(routers...)
+	set.AddSplitters(splitters...)
+	set.AddResolvers(resolvers...)
+	set.AddServices(defaults...)
+	set.AddProxyDefaults(proxies...)
+	return set
+}

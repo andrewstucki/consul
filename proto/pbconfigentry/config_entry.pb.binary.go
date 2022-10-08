@@ -318,6 +318,16 @@ func (msg *Gateway) UnmarshalBinary(b []byte) error {
 }
 
 // MarshalBinary implements encoding.BinaryMarshaler
+func (msg *GatewayListener) MarshalBinary() ([]byte, error) {
+	return proto.Marshal(msg)
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler
+func (msg *GatewayListener) UnmarshalBinary(b []byte) error {
+	return proto.Unmarshal(b, msg)
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler
 func (msg *TCPRoute) MarshalBinary() ([]byte, error) {
 	return proto.Marshal(msg)
 }
@@ -328,12 +338,12 @@ func (msg *TCPRoute) UnmarshalBinary(b []byte) error {
 }
 
 // MarshalBinary implements encoding.BinaryMarshaler
-func (msg *GatewayReference) MarshalBinary() ([]byte, error) {
+func (msg *ParentReference) MarshalBinary() ([]byte, error) {
 	return proto.Marshal(msg)
 }
 
 // UnmarshalBinary implements encoding.BinaryUnmarshaler
-func (msg *GatewayReference) UnmarshalBinary(b []byte) error {
+func (msg *ParentReference) UnmarshalBinary(b []byte) error {
 	return proto.Unmarshal(b, msg)
 }
 

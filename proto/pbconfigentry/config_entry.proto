@@ -415,7 +415,17 @@ message IntentionHTTPHeaderPermission {
 // ignore-fields=Kind,Name,RaftIndex,EnterpriseMeta
 message Gateway {
   string Name = 1;
-  map<string, string> Meta = 2;
+  repeated GatewayListener Listeners = 2;
+  map<string, string> Meta = 3;
+}
+
+// mog annotation:
+//
+// target=github.com/hashicorp/consul/agent/structs.GatewayListener
+// output=config_entry.gen.go
+// name=Structs
+message GatewayListener {
+  string Name = 1;
 }
 
 // mog annotation:
@@ -426,20 +436,22 @@ message Gateway {
 // ignore-fields=Kind,Name,RaftIndex,EnterpriseMeta
 message TCPRoute {
   string Name = 1;
-  repeated GatewayReference Gateways = 2;
+  repeated ParentReference Parents = 2;
   repeated TCPService Services = 3;
   map<string, string> Meta = 4;
 }
 
 // mog annotation:
 //
-// target=github.com/hashicorp/consul/agent/structs.GatewayReference
+// target=github.com/hashicorp/consul/agent/structs.ParentReference
 // output=config_entry.gen.go
 // name=Structs
-message GatewayReference {
-  string Name = 1;
+message ParentReference {
+  string Kind = 1;
+  string Name = 2;
+  string SectionName = 3;
   // mog: func-to=enterpriseMetaToStructs func-from=enterpriseMetaFromStructs
-  common.EnterpriseMeta EnterpriseMeta = 2;
+  common.EnterpriseMeta EnterpriseMeta = 4;
 }
 
 // mog annotation:
